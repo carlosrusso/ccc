@@ -16,6 +16,12 @@ def
     },
 
     /** @override */
+    _getFillSizeMin: function() {
+        var plotSizeMin = this.chart.options.plotSizeMin;
+        return plotSizeMin != null ? pvc_Size.to(plotSizeMin) : null;
+    },
+
+    /** @override */
     _createCore: function(layoutInfo) {
         var chart = this.chart,
             axes  = chart.axes,

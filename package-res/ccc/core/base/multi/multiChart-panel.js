@@ -306,8 +306,8 @@ def
         //        }
 
         var prevLayoutInfo = layoutInfo.previous;
-        var initialClientWidth   = prevLayoutInfo ? prevLayoutInfo.initialClientWidth  : clientSize.width ;
-        var initialClientHeight  = prevLayoutInfo ? prevLayoutInfo.initialClientHeight : clientSize.height;
+        var initialClientWidth  = prevLayoutInfo ? prevLayoutInfo.initialClientWidth  : clientSize.width ;
+        var initialClientHeight = prevLayoutInfo ? prevLayoutInfo.initialClientHeight : clientSize.height;
         
         var smallWidth = smallOption('Width');
         if(smallWidth != null) {

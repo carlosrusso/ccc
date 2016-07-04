@@ -59,8 +59,13 @@ def
     /** @override */
     _initAxesEnd: function() {
         var p = this.parent;
-        this._axisOffsetPaddings = p ? p._axisOffsetPaddings : this._calcAxesOffsetPaddings();
+        this._axisOffsetPaddings  = p ? p._axisOffsetPaddings  : this._calcAxesOffsetPaddings();
         this._plotsClientSizeInfo = p ? p._plotsClientSizeInfo : this._calcPlotsClientSizeInfo();
+
+        var axisOffsetPct = this._axisOffsetPct = {};
+        def.eachOwn(this._axisOffsetPaddings, function(v, p) {
+            if(v != null) axisOffsetPct[p] = new pvc_PercentValue(v);
+        });
 
         this.base();
     },
@@ -123,7 +128,7 @@ def
 
         function processAxis(axis) {
             var offset = axis && axis.option('Offset');
-            if(offset != null && offset > 0 && offset < 1) {
+            if(offset != null && offset > 0 && offset < 0.5) {
                 if(axis.orientation === 'x') {
                     setSide('left',  offset);
                     setSide('right', offset);
@@ -282,16 +287,16 @@ def
         return axis.scale;
     },
 
-    _getAxesRoundingPaddings: function() {
+    _getAxesRoundingOverflow: function() {
         var axesPaddings = {};
 
         this._eachCartAxis(function(axis) {
             // {begin: , end: , beginLocked: , endLocked: }
-            var tickRoundPads = axis.getScaleRoundingPaddings();
-            if(tickRoundPads) {
+            var overflow = axis.getRoundingOverflow();
+            if(overflow) {
                 var isX = axis.orientation === 'x';
-                setSide(isX ? 'left'  : 'bottom', tickRoundPads.begin, tickRoundPads.beginLocked);
-                setSide(isX ? 'right' : 'top'   , tickRoundPads.end,   tickRoundPads.endLocked);
+                setSide(isX ? 'left'  : 'bottom', overflow.begin, overflow.beginLocked);
+                setSide(isX ? 'right' : 'top'   , overflow.end,   overflow.endLocked);
             }
         });
         

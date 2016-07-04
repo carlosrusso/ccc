@@ -43,7 +43,7 @@ def
         var clientSize = layoutInfo.clientSize;
         if(!(clientSize.width > 0 && clientSize.height > 0)) return new pvc_Size(0,0);
 
-        var desiredClientSize = layoutInfo.desiredClientSize,
+        var clientSizeFix = layoutInfo.restrictions.clientSize,
 
             // The size of the biggest cell
             itemPadding = this._unresolvedItemPadding.resolve(clientSize),
@@ -73,7 +73,7 @@ def
             labelWidthMax = Math.max(0,
                 Math.min(
                     (desiredItemClientSize.width || Infinity),
-                    (desiredClientSize.width     || Infinity), 
+                    (clientSizeFix.width     || Infinity),
                     clientSize.width) - 
                 textLeft),
             // Names are for legend items when laid out in sections
@@ -82,10 +82,10 @@ def
             section,
             sections = [],
             contentSize = {width: 0, height: 0},
-            desiredSectionWidth = desiredClientSize[a_width],
-            $maxSectionWidth = desiredSectionWidth;
+            sectionWidthFix = clientSizeFix[a_width],
+            $sectionWidthMax = sectionWidthFix;
 
-        if(!$maxSectionWidth || $maxSectionWidth < 0) $maxSectionWidth = clientSize[a_width]; // row or col
+        if(!$sectionWidthMax || $sectionWidthMax < 0) $sectionWidthMax = clientSize[a_width]; // row or col
 
         this.childNodes.forEach(function(groupScene) { groupScene.childNodes.forEach(layoutItem, this); }, this);
         
@@ -102,8 +102,8 @@ def
         
         var isV1Compat = this.compatVersion() <= 1,
             // Request used width / all available width (V1)
-            $w = isV1Compat ? $maxSectionWidth : desiredSectionWidth,
-            $h = desiredClientSize[a_height];
+            $w = isV1Compat ? $sectionWidthMax : sectionWidthFix,
+            $h = clientSizeFix[a_height];
 
         if(!$w || $w < 0) $w = contentSize[a_width ];
         if(!$h || $h < 0) $h = contentSize[a_height];
@@ -153,7 +153,7 @@ def
             if(!isFirstInSection) $newSectionWidth += itemPadding[a_width]; // separate from previous item
             
             // If not the first item of a section and it does not fit
-            if(!isFirstInSection && ($newSectionWidth > $maxSectionWidth)) {
+            if(!isFirstInSection && ($newSectionWidth > $sectionWidthMax)) {
                 commitSection(/* isLast */false);
                 
                 $newSectionWidth = itemClientSize[a_width];
