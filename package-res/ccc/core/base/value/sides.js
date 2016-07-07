@@ -165,3 +165,25 @@ pvc_Sides.inflate = function(sides, by) {
 
     return pvc_Sides.updateSize(sidesOut);
 };
+
+//region Layout Helpers
+pvc_Sides.filterAnchor = function(a, sides) {
+    var filtered = new pvc_Sides();
+
+    pvc_Sides.getAnchorSides(a).forEach(function(side) {
+        filtered.set(side, sides[side]);
+    });
+
+    return filtered;
+}
+
+pvc_Sides.getAnchorSides = function(a) {
+    switch(a) {
+        case 'left':
+        case 'right':  return pvc_Sides.vnames;
+        case 'top':
+        case 'bottom': return pvc_Sides.hnames;
+        case 'fill':   return pvc_Sides.names;
+    }
+}
+//endregion

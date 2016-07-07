@@ -53,7 +53,7 @@ define(function() {
                     ["2011-06-26", 23, 32,  N],
                     ["2011-07-03", 72, 24, 60],
                     ["2011-07-10", 80, 80, 80],
-                    ["2011-07-17",  N, 90, 15]
+                    ["2011-07-17",  N, 90, 15],
                     ["2011-07-24",  N, 53,  N],
                     ["2011-07-26", 23,  N,  N],
                     ["2011-07-31", 72, 17,  N],
@@ -185,6 +185,26 @@ define(function() {
             {
                 crosstabMode: false,
                 readers:      "category, value"
+            }
+        ],
+
+        'relational, category=date|value=qty|value2=sales, 4 categories, constant positive value': [
+            {
+                resultset: [
+                    ["2011-06-05", 10, 1],
+                    ["2011-06-12", 10, 10],
+                    ["2011-06-19", 10, 50],
+                    ["2011-06-10", 10, 100]
+                ],
+                metadata: [
+                    {colType: "String",  colName: "Date"},
+                    {colType: "Numeric", colName: "Quantity"},
+                    {colType: "Numeric", colName: "Sales"}
+                ]
+            },
+            {
+                crosstabMode: false,
+                readers:      "category, value, value2"
             }
         ]
     };

@@ -15,7 +15,8 @@ def
     // providing a static 0 value, independently of the actual drawn value...
     //this.borderWidth = 0;
 
-    options.sizeMin = plot.option('SizeMin');
+    // options.sizeMin = plot.option('SizeMin');
+    options.paddings = chart._axisOffsetPct;
 
     this.base(chart, parent, options);
     
@@ -55,7 +56,7 @@ def
      * Do NOT modify the returned array.
      *
      * @param {string} dimName The name of the dimension.
-     * @param {boolean} [includeChart=false] Indicates wether chart visual roles should be included as well.
+     * @param {boolean} [includeChart=false] Indicates whether chart visual roles should be included as well.
      * @return {pvc.visual.Role[]} The array of visual roles or <tt>null</tt>, if none.
      * @see pvc.BaseChart#visualRolesOf
      * @virtual

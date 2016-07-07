@@ -292,7 +292,7 @@
                         }
 
                         _childLayoutKeyArgs.size      = new pvc_Size(_fillSize);
-                        _childLayoutKeyArgs.paddings  = filterAnchorPaddings(anchor, _childPaddings);
+                        _childLayoutKeyArgs.paddings  = pvc_Sides.filterAnchor(anchor, _childPaddings);
                         _childLayoutKeyArgs.canChange = canChangeChild;
 
                         child.layout(_childLayoutKeyArgs);
@@ -439,7 +439,7 @@
                     size[al ] = _fillSize[al];
                     size[aol] = child[aol]; // fixed in phase 1
 
-                    pads = filterAnchorPaddings(anchor, _childPaddings);
+                    pads = pvc_Sides.filterAnchor(anchor, _childPaddings);
                 }
 
                 _childLayoutKeyArgs.size = size;
@@ -486,7 +486,7 @@
                     if(_useLog) child.log("RequestPaddings=" + def.describe(requestPaddings));
 
                     // Compare requested paddings with existing paddings
-                    getAnchorPaddingsNames(anchor).forEach(function(side) {
+                    pvc_Sides.getAnchorSides(anchor).forEach(function(side) {
                         var value = _childPaddings[side] || 0;
                         var requestValue = Math.floor(10 * (requestPaddings[side] || 0)) / 10;
 
@@ -560,7 +560,7 @@
 
                 var ownPaddings = _layoutInfo.paddings;
 
-                getAnchorPaddingsNames(child.anchor).forEach(function(side) {
+                pvc_Sides.getAnchorSides(child.anchor).forEach(function(side) {
                     if(overflowPaddings.hasOwnProperty(side)) {
                         var value    = ownPaddings[side] || 0,
                             // corners absorb some of it
@@ -589,25 +589,5 @@
         }
     });
 
-    //region Layout Helpers
-    function filterAnchorPaddings(a, paddings) {
-        var filtered = new pvc_Sides();
 
-        getAnchorPaddingsNames(a).forEach(function(side) {
-            filtered.set(side, paddings[side]);
-        });
-
-        return filtered;
-    }
-
-    function getAnchorPaddingsNames(a) {
-        switch(a) {
-            case 'left':
-            case 'right':  return pvc_Sides.vnames;
-            case 'top':
-            case 'bottom': return pvc_Sides.hnames;
-            case 'fill':   return pvc_Sides.names;
-        }
-    }
-    //endregion
 }());

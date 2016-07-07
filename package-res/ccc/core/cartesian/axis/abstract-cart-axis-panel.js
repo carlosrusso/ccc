@@ -11,11 +11,14 @@ def
 .type('pvc.AxisPanel', pvc.BasePanel)
 .init(function(chart, parent, axis, options) {
 
+
     options = def.create(options, {
         anchor: axis.option('Position')
     });
 
     var anchor = options.anchor || this.anchor;
+
+    options.paddings = pvc_Sides.filterAnchor(anchor, chart._axisOffsetPct);
 
     // Prevent the border from affecting the box model,
     // providing a static 0 value, independently of the actual drawn value...

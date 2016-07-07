@@ -62,6 +62,12 @@ def
         this._axisOffsetPaddings = p ? p._axisOffsetPaddings : this._calcAxesOffsetPaddings();
         this._plotsClientSizeInfo = p ? p._plotsClientSizeInfo : this._calcPlotsClientSizeInfo();
 
+        var axisOffsetPct = {};
+        def.eachOwn(this._axisOffsetPaddings, function(v, p) {
+            if(v != null) axisOffsetPct[p] = new pvc_PercentValue(v);
+        });
+        this._axisOffsetPct = axisOffsetPct;
+
         this.base();
     },
 

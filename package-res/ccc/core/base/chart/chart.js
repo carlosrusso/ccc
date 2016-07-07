@@ -798,6 +798,7 @@ def
 
         width:  400,
         height: 300,
+//      plotSizeMin: undefined
 
 //      margins:  undefined,
 //      paddings: undefined,
