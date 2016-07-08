@@ -94,6 +94,35 @@ def
         return this._layoutInfo && this._layoutInfo.ticks;
     },
 
+    _calcLayoutPaddings: function(layoutInfo) {
+
+        var scale = this.axis.scale;
+        // First time setup
+        if(!this._isScaleSetup) {
+            this.pvScale = scale;
+            this.scale   = scale; // TODO: At least HeatGrid depends on this. Maybe Remove?
+
+            this.extend(scale, "scale");
+
+            this._isScaleSetup = true;
+        }
+
+        // ---
+
+        var paddings = this.base(layoutInfo);
+
+        if(!scale.isNull) {
+            // Determine client size for spec paddings.
+            var spaceW = layoutInfo.margins.width  + paddings.width;
+            var spaceH = layoutInfo.margins.height + paddings.height;
+
+            var clientSize = pvc_Size.deflate(layoutInfo.size, spaceW, spaceH);
+
+        }
+
+        return paddings;
+    },
+
     _calcLayout: function(layoutInfo) {
         var scale = this.axis.scale,
             clientSize = layoutInfo.clientSize;

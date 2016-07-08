@@ -360,33 +360,18 @@ def
 
         // ---
 
-        var margins  = (def.get(ka, 'margins' ) || this.margins ).resolve(sizeRef);
-        var paddings = (def.get(ka, 'paddings') || this.paddings).resolve(sizeRef);
+        var sizeAvailableInput = def.copyOwn(sizeAvailable);
 
-        var borderHalf = this.borderWidth / 2;
-        margins  = pvc_Sides.inflate(margins,  borderHalf);
-        paddings = pvc_Sides.inflate(paddings, borderHalf);
-
-        var spaceW = margins.width  + paddings.width;
-        var spaceH = margins.height + paddings.height;
-
-        // ---
-
-        // This client size is not affected by sizeMin, to that, below, clientSize increase detection works.
-        var clientSizeAvailableInput = pvc_Size.deflate(sizeAvailable, spaceW, spaceH);
-
-        if(def.debug >= 10) {
-            this.log("Size          -> " + def.describe(sizeAvailable));
-            this.log(" Margins      -> " + def.describe(margins));
-            this.log("  Paddings    -> " + def.describe(paddings));
-            this.log("   ClientSize -> " + def.describe(clientSizeAvailableInput));
-        }
 
         // Apply bounds to available size
         pvc_Size.applyMinMax(sizeAvailable, sizeMin, sizeMax);
 
-        var clientSizeAvailable = pvc_Size.deflate(sizeAvailable, spaceW, spaceH);
-        var clientSizeFix       = pvc_Size.deflate(sizeFix, spaceW, spaceH);
+        // ---
+        var borderHalf = this.borderWidth / 2;
+
+        var margins  = (def.get(ka, 'margins' ) || this.margins ).resolve(sizeRef);
+        margins = pvc_Sides.inflate(margins,  borderHalf);
+
 
         /**
          * The `ILayoutInfoRestrictions` interface contains restriction information that
@@ -400,9 +385,9 @@ def
             sizeMin:   sizeMin,
             sizeMax:   sizeMax,
             size:      sizeFix,
-            clientSizeMin: pvc_Size.deflate(sizeMin, spaceW, spaceH),
-            clientSizeMax: pvc_Size.deflate(sizeMax, spaceW, spaceH),
-            clientSize:    clientSizeFix
+            clientSizeMin: null,
+            clientSizeMax: null,
+            clientSize:    null
         };
 
         /**
@@ -413,93 +398,129 @@ def
          * @interface
          */
         var li = this._layoutInfo = /** @lends pvc.visual.ILayoutInfo */{
-                /**
-                 * The reference size relative to which percentage values are resolved.
-                 * @type {!pvc.visual.ISize}
-                 */
-                sizeRef:       sizeRef,
-                referenceSize: sizeRef, // @deprecated use sizeRef instead
-                desiredClientSize: clientSizeFix, // @deprecated  use clientSizeFix instead
+            /**
+             * The reference size relative to which percentage values are resolved.
+             * @type {!pvc.visual.ISize}
+             */
+            sizeRef:       sizeRef,
+            referenceSize: sizeRef, // @deprecated use sizeRef instead
+            desiredClientSize: null, // @deprecated  use clientSizeFix instead
 
-                /**
-                 * The resolved border width.
-                 *
-                 * A non-negative number.
-                 * @type {number}
-                 */
-                borderWidth: this.borderWidth,
+            /**
+             * The resolved border width.
+             *
+             * A non-negative number.
+             * @type {number}
+             */
+            borderWidth: this.borderWidth,
 
-                /**
-                 * The resolved panel margins.
-                 *
-                 * @type {!pvc.visual.ISidesExt}
-                 */
-                margins: margins,
+            /**
+             * The resolved panel margins.
+             *
+             * @type {!pvc.visual.ISidesExt}
+             */
+            margins: margins,
 
-                /**
-                 * The resolved panel paddings.
-                 *
-                 * @type {!pvc.visual.ISidesExt}
-                 */
-                paddings: paddings,
+            /**
+             * The resolved panel paddings.
+             *
+             * @type {!pvc.visual.ISidesExt}
+             */
+            paddings: null,
 
-                /**
-                 * The resolved panel spacings.
-                 *
-                 * @type {!pvc.visual.ISize}
-                 */
-                spacings: {width: spaceW, height: spaceH},
+            /**
+             * The resolved panel spacings.
+             *
+             * @type {!pvc.visual.ISize}
+             */
+            spacings: null,
 
-                /**
-                 * The size of the panel.
-                 *
-                 * When laying out,
-                 * it is the size that the parent has available for the child,
-                 * without itself growing or without enabling scrolling.
-                 *
-                 * @type {!pvc.visual.ISize}
-                 */
-                size: sizeAvailable,
+            /**
+             * The size of the panel.
+             *
+             * When laying out,
+             * it is the size that the parent has available for the child,
+             * without itself growing or without enabling scrolling.
+             *
+             * @type {!pvc.visual.ISize}
+             */
+            size: sizeAvailable,
 
-                /**
-                 * The client size of the panel.
-                 *
-                 * When laying out,
-                 * it is the client size that the parent has available for the child,
-                 * without itself growing or without enabling scrolling.
-                 *
-                 * The value of this property is equal to
-                 * {@link pvc.visual.LayoutInfo#size} minus {@link pvc.visual.LayoutInfo#spacings}.
-                 *
-                 * @type {!pvc.visual.ISize}
-                 */
-                clientSize: clientSizeAvailable,
+            /**
+             * The client size of the panel.
+             *
+             * When laying out,
+             * it is the client size that the parent has available for the child,
+             * without itself growing or without enabling scrolling.
+             *
+             * The value of this property is equal to
+             * {@link pvc.visual.LayoutInfo#size} minus {@link pvc.visual.LayoutInfo#spacings}.
+             *
+             * @type {!pvc.visual.ISize}
+             */
+            clientSize: null,
 
-                /**
-                 * The page client size of the panel.
-                 *
-                 * The client size of the first layout iteration of the panel.
-                 *
-                 * @type {!pvc.visual.ISize}
-                 */
-                clientSizePage: layoutInfoPrev ? layoutInfoPrev.clientSizePage : pvc_Size.clone(clientSizeAvailable),
+            /**
+             * The page client size of the panel.
+             *
+             * The client size of the first layout iteration of the panel.
+             *
+             * @type {!pvc.visual.ISize}
+             */
+            clientSizePage: layoutInfoPrev ? layoutInfoPrev.clientSizePage : null,
 
-                /**
-                 * The layout information of the previous layout iteration, if any.
-                 *
-                 * This property is set to `null` upon the end of a layout operation.
-                 *
-                 * @type {pvc.visual.ILayoutInfoExtra}
-                 */
-                previous: layoutInfoPrev,
+            /**
+             * The layout information of the previous layout iteration, if any.
+             *
+             * This property is set to `null` upon the end of a layout operation.
+             *
+             * @type {pvc.visual.ILayoutInfoExtra}
+             */
+            previous: layoutInfoPrev,
 
-                /**
-                 * The restrictions information that is available only during the layout operation.
-                 *
-                 * @type {pvc.visual.ILayoutInfoRestrictions}
-                 */
-                restrictions: liRestrictions
-            };
+            /**
+             * The restrictions information that is available only during the layout operation.
+             *
+             * @type {pvc.visual.ILayoutInfoRestrictions}
+             */
+            restrictions: liRestrictions
+        };
+
+        if(def.debug >= 10) {
+            this.log("Size          -> " + def.describe(sizeAvailableInput));
+            this.log(" Margins      -> " + def.describe(margins));
+        }
+
+        var paddings = def.get(ka, 'paddings');
+        if(!paddings) paddings = this._calcLayoutPaddings(li);
+
+        li.paddings = paddings;
+
+        var spaceW = margins.width  + paddings.width;
+        var spaceH = margins.height + paddings.height;
+
+        li.spacings = {width: spaceW, height: spaceH};
+
+        // ---
+
+        // This client size is not affected by sizeMin, to that, below, clientSize increase detection works.
+        var clientSizeAvailableInput = pvc_Size.deflate(sizeAvailableInput, spaceW, spaceH);
+
+        if(def.debug >= 10) {
+            this.log("  Paddings    -> " + def.describe(paddings));
+            this.log("   ClientSize -> " + def.describe(clientSizeAvailableInput));
+        }
+
+        var clientSizeAvailable = pvc_Size.deflate(sizeAvailable, spaceW, spaceH);
+        li.clientSize = clientSizeAvailable;
+
+        if(!layoutInfoPrev) li.clientSizePage = pvc_Size.clone(clientSizeAvailable);
+
+        liRestrictions.clientSizeMin = pvc_Size.deflate(sizeMin, spaceW, spaceH);
+        liRestrictions.clientSizeMax = pvc_Size.deflate(sizeMax, spaceW, spaceH);
+
+        var clientSizeFix = pvc_Size.deflate(sizeFix, spaceW, spaceH);
+        liRestrictions.clientSize = li.desiredClientSize = clientSizeFix;
 
         // ---
 
@@ -599,6 +620,12 @@ def
                 sizeNeeds[a_len] = clientSizeNeeds[a_len] + li.spacings[a_len];
             }
         }
+    },
+
+    _calcLayoutPaddings: function(layoutInfo) {
+        var paddings = this.paddings.resolve(layoutInfo.sizeRef);
+
+        return pvc_Sides.inflate(paddings, layoutInfo.borderWidth / 2);
     },
 
     _onLaidOut: function() {
