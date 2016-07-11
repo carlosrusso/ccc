@@ -17,7 +17,7 @@ def
 
     /** @override */
     _getFillSizeMin: function() {
-        var plotSizeMin = this.chart.options.plotSizeMin;
+        var plotSizeMin = !this.chart.parent ? this.chart.options.plotSizeMin : null;
         return plotSizeMin != null ? pvc_Size.to(plotSizeMin) : null;
     },
 
