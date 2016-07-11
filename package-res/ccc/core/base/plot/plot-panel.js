@@ -15,6 +15,8 @@ def
     // providing a static 0 value, independently of the actual drawn value...
     //this.borderWidth = 0;
 
+    if(options.sizeMin == null) options.sizeMin = this._getOptionSizeMin(chart);
+
     // Respect if layout is fixed.
     // _axisOffsetPct is only defined for cartesian charts.
     if(options.paddings == null) options.paddings = chart._axisOffsetPct;
@@ -47,6 +49,11 @@ def
     _getExtensionId: function() {
         // NOTE: 'chart' is deprecated. Use 'plot'.
         return ['chart', 'plot'];
+    },
+
+    _getOptionSizeMin: function(chart) {
+        var plotSizeMin = !chart.parent ? chart.options.plotSizeMin : null;
+        return plotSizeMin != null ? pvc_Size.to(plotSizeMin) : null;
     },
 
     /**

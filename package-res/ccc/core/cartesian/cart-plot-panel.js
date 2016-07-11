@@ -28,6 +28,11 @@ def
     addAxis(chart._getAxis('ortho', plot.option('OrthoAxis') - 1));
 })
 .add({
+    _getOptionSizeMin: function(chart) {
+        // SizeMin is the FillSizeMin of the CartesianGridDockingPanel and is managed by it.
+        return null;
+    },
+
     _calcLayout: function(layoutInfo) {
         var chart = this.chart,
             clientSizeInfo = chart._plotsClientSizeInfo,
