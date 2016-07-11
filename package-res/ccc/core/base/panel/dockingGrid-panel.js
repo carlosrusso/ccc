@@ -308,7 +308,7 @@ def
                     }
 
                     // Ignore minor changes
-                    if(Math.abs(olen - olenPrev) < 0.1) {
+                    if(Math.abs(olen - olenPrev) < pvc.roundPixel.epsilon) {
                         olen = olenPrev;
                     } else {
                         layoutChange |= MarginsChanged;
@@ -500,7 +500,7 @@ def
 
             function checkDimension(a_len) {
                 var addLen = sizeIncrease[a_len];
-                if(addLen) {
+                if(addLen > pvc.roundPixel.epsilon) {
                     if(!canChangeChild) {
                         if(_useLog)
                             child.log.warn("Child wanted more " +
@@ -533,7 +533,7 @@ def
                 // Discount for any clientSize increase already performed by checkChildSizeIncreased.
                 addLen -= ownClientSizeIncrease[a_len];
 
-                if(addLen > pv.epsilon) {
+                if(addLen > pvc.roundPixel.epsilon) {
                     if(!canChange) {
                         if(_useLog)
                             _me.log.warn("Wanted more fill " + a_len + ", " + addLen +
@@ -564,7 +564,7 @@ def
                     // Round overflow upward.
 
                     var value    = _contentOverflow[side] || 0;
-                    var valueNew = Math.ceil(10 * contentOverflow[side] || 0) / 10;
+                    var valueNew = pvc.roundPixel.up(contentOverflow[side] || 0);
                     if(valueNew > value) {
                         if(!canChangeChild) {
                             if(_useLog)
@@ -607,14 +607,14 @@ def
                 if(contentOverflowOptional.hasOwnProperty(side)) {
                     // Precision is 1/10th of a pixel.
 
-                    var value = Math.floor(10 * ownPaddings[side] || 0) / 10,
+                    var value = pvc.roundPixel.down(ownPaddings[side] || 0),
                         // This is the overflow from the clientSize + padding box.
                         // If the panel uses a clientSize less than _fillSize, the overflow is not the actual fill overflow.
                         childOverflow = contentOverflowOptional[side] || 0,
                         childLen      = child._layoutInfo.size[a_len],
                         fillOverflow  = Math.max(0, (childLen + childOverflow) - _fillSize[a_len]),
                         // corners absorb some of it
-                        valueNew = Math.ceil(10 * Math.max(0, fillOverflow - _margins[side])) / 10;
+                        valueNew = pvc.roundPixel.up(Math.max(0, fillOverflow - _margins[side]));
 
                     if(valueNew > value) {
                         if(!canChangeChild) {

@@ -841,7 +841,7 @@ def
             return def.query(pvc_Sides.names).each(function(side) {
                 var curPad = (paddings && paddings[side]) || 0,
                     newPad = (contentOverflow && contentOverflow[side]) || 0;
-                 if(Math.abs(newPad - curPad) >= 0.1) return false; // Stop iteration
+                 if(Math.abs(newPad - curPad) >= pvc.roundPixel.epsilon) return false; // Stop iteration
             });
         }
 
@@ -860,7 +860,7 @@ def
 
             function checkDimension(a_len) {
                 var addLen = sizeIncrease[a_len];
-                if(addLen > 0.1) {
+                if(addLen > pvc.roundPixel.epsilon) {
                     if(!canResize) {
                         if(useLog)
                             child.log.warn("Child wanted more " +
