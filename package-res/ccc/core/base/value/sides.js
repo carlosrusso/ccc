@@ -153,7 +153,7 @@ pvc_Sides.resolvedMax = function(a, b) {
         sides[side] = Math.max(a[side] || 0, b[side] || 0);
     });
 
-    return sides;
+    return pvc_Sides.updateSize(sides);
 };
 
 pvc_Sides.inflate = function(sides, by) {

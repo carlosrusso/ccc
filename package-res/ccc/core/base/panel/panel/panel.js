@@ -360,12 +360,22 @@ def
 
         // ---
 
-        var margins  = (def.get(ka, 'margins' ) || this.margins ).resolve(sizeRef);
-        var paddings = (def.get(ka, 'paddings') || this.paddings).resolve(sizeRef);
-
         var borderHalf = this.borderWidth / 2;
-        margins  = pvc_Sides.inflate(margins,  borderHalf);
-        paddings = pvc_Sides.inflate(paddings, borderHalf);
+
+        var marginsArg  = def.get(ka, 'margins');
+        var paddingsArg = def.get(ka, 'paddings');
+
+        var margins = marginsArg
+            ? pvc_Sides.updateSize(marginsArg)
+            : pvc_Sides.inflate(this.margins.resolve(sizeRef), borderHalf);
+
+
+        var paddings = paddingsArg
+            ? pvc_Sides.updateSize(paddingsArg)
+            : pvc_Sides.inflate(this.paddings.resolve(sizeRef), borderHalf);
+
+        var paddingsMin = def.get(ka, 'paddingsMin');
+        if(paddingsMin) paddings = pvc_Sides.resolvedMax(paddings, paddingsMin);
 
         var spaceW = margins.width  + paddings.width;
         var spaceH = margins.height + paddings.height;
@@ -524,7 +534,7 @@ def
         li.clientSizeIncrease = (clientSizeIncrease.width || clientSizeIncrease.height) ? clientSizeIncrease : null;
         li.sizeIncrease       = (sizeIncrease.width       || sizeIncrease.height      ) ? sizeIncrease       : null;
 
-        if(li.sizeIncrease) {
+        if(li.sizeIncrease && (!marginsArg || !paddingsArg)) {
             // Update margins and paddings. This is specially relevant on the root panel,
             // where no subsequent layout will occur, and it is therefore crucial to leave margins and paddings
             // in sync with the inner layout.
@@ -532,11 +542,8 @@ def
             if(sizeIncrease.width ) sizeRef2.width  += sizeIncrease.width;
             if(sizeIncrease.height) sizeRef2.height += sizeIncrease.height;
 
-            margins  = (def.get(ka, 'margins' ) || this.margins ).resolve(sizeRef2);
-            paddings = (def.get(ka, 'paddings') || this.paddings).resolve(sizeRef2);
-
-            margins  = pvc_Sides.inflate(margins,  borderHalf);
-            paddings = pvc_Sides.inflate(paddings, borderHalf);
+            if(!marginsArg)  margins  = pvc_Sides.inflate(this.margins .resolve(sizeRef2), borderHalf);
+            if(!paddingsArg) paddings = pvc_Sides.inflate(this.paddings.resolve(sizeRef2), borderHalf);
 
             spaceW = margins.width  + paddings.width;
             spaceH = margins.height + paddings.height;
@@ -575,7 +582,7 @@ def
         function processSizeDirection(a_len) {
             var addLen = clientSizeNeeds[a_len] - clientSizeAvailableInput[a_len];
             if(addLen > pv.epsilon) {
-                if(def.debug >= 10) this.log("Increased " + a_len + " by " + addLen);
+                if(def.debug >= 10) this.log("Increased client " + a_len + " by " + addLen);
 
                 clientSizeIncrease[a_len] = addLen;
 
@@ -592,6 +599,8 @@ def
                 if(pct > 0) addLen = addLen / (1 - pct);
 
                 sizeIncrease[a_len] = addLen;
+
+                if(def.debug >= 10) this.log("Increased outer " + a_len + " by " + addLen + " (pct = " + pct + ")");
 
                 // Any fixed margins/paddings components are already in sizeNeeds.
                 sizeNeeds[a_len] += addLen;

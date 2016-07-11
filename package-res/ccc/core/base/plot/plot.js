@@ -270,16 +270,6 @@ def('pvc.visual.Plot', pvc.visual.OptionsBase.extend({
             cast: String
         },
 
-        SizeMin: {
-            resolve: function(optionInfo) {
-                var plotSizeMin = this._chartOption('plotSizeMin');
-                if(plotSizeMin)
-                    optionInfo.specify(plotSizeMin);
-                return true;
-            },
-            cast: pvc_Size.to
-        },
-
         ValuesVisible: {
             resolve: '_resolveFull',
             data: {

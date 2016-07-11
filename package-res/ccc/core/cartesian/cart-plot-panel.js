@@ -67,13 +67,10 @@ def
             pvc_Sides.names.forEach(function(side) {
                 // Only request offset-padding if the tickRoundPads.side is not locked.
                 if(!tickRoundPads[side + 'Locked']) {
-
-                    var len_a = pvc.BasePanel.orthogonalLength[side];
-                    var len = li.clientSize[len_a] + li.paddings[len_a];
-
                     // Offset paddings are a percentage of the outer length
                     // (there are no margins in this panel).
-                    var offLen = len * (offsetPads[side] || 0);
+                    var len_a = pvc.BasePanel.orthogonalLength[side];
+                    var offLen = li.size[len_a] * (offsetPads[side] || 0);
 
                     // Rounding paddings are the number of pixels of client length
                     // that already are "padding", due to domain rounding.

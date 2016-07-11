@@ -15,13 +15,9 @@ def
     // providing a static 0 value, independently of the actual drawn value...
     //this.borderWidth = 0;
 
-    // options.sizeMin = plot.option('SizeMin');
-
     // Respect if layout is fixed.
-    if(options.paddings == null) {
-        // _axisOffsetPct is only defined for cartesian charts.
-        options.paddings = chart._axisOffsetPct;
-    }
+    // _axisOffsetPct is only defined for cartesian charts.
+    if(options.paddings == null) options.paddings = chart._axisOffsetPct;
 
     this.base(chart, parent, options);
     
