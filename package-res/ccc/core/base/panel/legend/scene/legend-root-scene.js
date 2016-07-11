@@ -43,10 +43,14 @@ def
         var clientSize = layoutInfo.clientSize;
         if(!(clientSize.width > 0 && clientSize.height > 0)) return new pvc_Size(0,0);
 
-        var clientSizeFix = layoutInfo.restrictions.clientSize,
+        var clientSizeFix = layoutInfo.restrictions.clientSize;
+
+        if((clientSizeFix.width  != null && clientSizeFix.width  == 0) ||
+           (clientSizeFix.height != null && clientSizeFix.height == 0))
+            return new pvc_Size(0, 0);
 
             // The size of the biggest cell
-            itemPadding = this._unresolvedItemPadding.resolve(clientSize),
+        var itemPadding = this._unresolvedItemPadding.resolve(clientSize),
 
             // This facilitates making the calculations for the margins of border items
             //  to not be included.
@@ -73,7 +77,7 @@ def
             labelWidthMax = Math.max(0,
                 Math.min(
                     (desiredItemClientSize.width || Infinity),
-                    (clientSizeFix.width     || Infinity),
+                    (clientSizeFix.width || Infinity),
                     clientSize.width) - 
                 textLeft),
             // Names are for legend items when laid out in sections
@@ -197,10 +201,10 @@ def
         }
 
         function isOverflow() {
-            var desiredWidth = desiredClientSize.width || Infinity;
-            var desiredHeight = desiredClientSize.height || Infinity;
+            var desiredWidth  = clientSizeFix.width  || Infinity;
+            var desiredHeight = clientSizeFix.height || Infinity;
 
-            return (Math.min(desiredWidth, clientSize.width) < contentSize.width) ||
+            return (Math.min(desiredWidth,  clientSize.width)  < contentSize.width) ||
                    (Math.min(desiredHeight, clientSize.height) < contentSize.height);
 
         }

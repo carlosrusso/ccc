@@ -515,43 +515,48 @@ def
 
         var clientSizeNeeds = this._calcLayout(li) || clientSizeAvailable;
 
-        // ---
+        this.isVisible = (clientSizeNeeds.width > 0 && clientSizeNeeds.height > 0);
 
-        // TODO: auto-clip when clientSizeNeeds exceeds clientSizeMax ?
+        if(!this.isVisible) {
+            li.size = {width: 0, height: 0};
+            li.sizeIncrease = li.clientSizeIncrease = null;
+        } else {
+            // TODO: auto-clip when clientSizeNeeds exceeds clientSizeMax ?
 
-        // Can grow beyond actually-available size, but not beyond a specified max size.
-        li.clientSize = pvc_Size.applyMinMax(clientSizeNeeds, liRestrictions.clientSizeMin, liRestrictions.clientSizeMax);
+            // Can grow beyond actually-available size, but not beyond a specified max size.
+            li.clientSize = pvc_Size.applyMinMax(clientSizeNeeds, liRestrictions.clientSizeMin, liRestrictions.clientSizeMax);
 
-        var clientSizeIncrease = {width: 0, height: 0};
-        var sizeIncrease = {width: 0, height: 0};
+            var clientSizeIncrease = {width: 0, height: 0};
+            var sizeIncrease = {width: 0, height: 0};
 
-        // Assuming li.size is not mutated by _calcLayout code.
-        var sizeNeeds = li.size;
+            // Assuming li.size is not mutated by _calcLayout code.
+            var sizeNeeds = li.size;
 
-        processSizeDirection.call(this, 'width' );
-        processSizeDirection.call(this, 'height');
+            processSizeDirection.call(this, 'width' );
+            processSizeDirection.call(this, 'height');
 
-        li.clientSizeIncrease = (clientSizeIncrease.width || clientSizeIncrease.height) ? clientSizeIncrease : null;
-        li.sizeIncrease       = (sizeIncrease.width       || sizeIncrease.height      ) ? sizeIncrease       : null;
+            li.clientSizeIncrease = (clientSizeIncrease.width || clientSizeIncrease.height) ? clientSizeIncrease : null;
+            li.sizeIncrease       = (sizeIncrease.width       || sizeIncrease.height      ) ? sizeIncrease       : null;
 
-        if(li.sizeIncrease && (!marginsArg || !paddingsArg)) {
-            // Update margins and paddings. This is specially relevant on the root panel,
-            // where no subsequent layout will occur, and it is therefore crucial to leave margins and paddings
-            // in sync with the inner layout.
-            var sizeRef2 = def.copyOwn(sizeRef);
-            if(sizeIncrease.width ) sizeRef2.width  += sizeIncrease.width;
-            if(sizeIncrease.height) sizeRef2.height += sizeIncrease.height;
+            if(li.sizeIncrease && (!marginsArg || !paddingsArg)) {
+                // Update margins and paddings. This is specially relevant on the root panel,
+                // where no subsequent layout will occur, and it is therefore crucial to leave margins and paddings
+                // in sync with the inner layout.
+                var sizeRef2 = def.copyOwn(sizeRef);
+                if(sizeIncrease.width ) sizeRef2.width  += sizeIncrease.width;
+                if(sizeIncrease.height) sizeRef2.height += sizeIncrease.height;
 
-            if(!marginsArg)  margins  = pvc_Sides.inflate(this.margins .resolve(sizeRef2), borderHalf);
-            if(!paddingsArg) paddings = pvc_Sides.inflate(this.paddings.resolve(sizeRef2), borderHalf);
+                if(!marginsArg)  margins  = pvc_Sides.inflate(this.margins .resolve(sizeRef2), borderHalf);
+                if(!paddingsArg) paddings = pvc_Sides.inflate(this.paddings.resolve(sizeRef2), borderHalf);
 
-            spaceW = margins.width  + paddings.width;
-            spaceH = margins.height + paddings.height;
+                spaceW = margins.width  + paddings.width;
+                spaceH = margins.height + paddings.height;
 
-            li.margins = margins;
-            li.paddings = paddings;
-            li.spacings.width = spaceW;
-            li.spacings.height = spaceH;
+                li.margins = margins;
+                li.paddings = paddings;
+                li.spacings.width = spaceW;
+                li.spacings.height = spaceH;
+            }
         }
 
         // ---
@@ -562,7 +567,6 @@ def
 
         // ---
 
-        this.isVisible = (clientSizeNeeds.width > 0 && clientSizeNeeds.height > 0);
         this.width  = this.isVisible ? sizeNeeds.width  : 0;
         this.height = this.isVisible ? sizeNeeds.height : 0;
 
