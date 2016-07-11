@@ -31,7 +31,7 @@ define([
             var li = chart._gridDockPanel._layoutInfo;
             expect(li instanceof Object).toBe(true);
 
-            // label overflow paddings that exceed the axis offset paddings and grid child margins
+            // optional label overflow that exceed the axis offset paddings and grid child margins
             // are translated into dockingGrid panel paddings
             expect(li.paddings.right).toBe(0);
             expect(li.paddings.left).toBe(0);

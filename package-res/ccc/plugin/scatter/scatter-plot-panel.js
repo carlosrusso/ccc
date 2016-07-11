@@ -194,18 +194,18 @@ def
         // If we were not to take axes rounding padding effect
         // into account, it could be as simple as:
         // var offsetRadius = radiusRange.max + 6;
-        // requestPaddings = new pvc_Sides(offsetRadius);
+        // contentOverflow = new pvc_Sides(offsetRadius);
 
-        var requestPaddings;
+        var contentOverflow;
 
         if(!this.autoPaddingByDotSize) {
-            requestPaddings = this._calcRequestPaddings(layoutInfo);
+            contentOverflow = this._calcContentOverflow(layoutInfo);
         } else {
             var axes = this.axes,
                 clientSize = layoutInfo.clientSize,
                 paddings   = layoutInfo.paddings;
 
-            requestPaddings = {};
+            contentOverflow = {};
 
             /* The Worst case implementation would be like:
              *   Use more padding than is required in many cases,
@@ -246,7 +246,7 @@ def
             //var xMinPct = xScale(xDomain.min) /  clientSize.width;
             //var overflowLeft = (offsetRadius - xMinPct * (paddings.left + clientSize.width)) / (1 - xMinPct);
 
-            requestPaddings = {};
+            contentOverflow = {};
 
             // Resolve offset paddings (not of PercentValue so cannot use pvc.Sides#resolve)
             var op, axisOffsetPaddings = this.chart._axisOffsetPaddings;
@@ -264,8 +264,8 @@ def
                 if(op) padding += (op[side] || 0);
                 if(padding < 0) padding = 0;
 
-                var value = requestPaddings[side];
-                if(value == null || padding > value) requestPaddings[side] = padding;
+                var value = contentOverflow[side];
+                if(value == null || padding > value) contentOverflow[side] = padding;
             };
 
             var processScene = function(scene) {
@@ -286,7 +286,7 @@ def
                 .each(processScene);
         }
 
-        layoutInfo.requestPaddings = requestPaddings;
+        layoutInfo.contentOverflow = contentOverflow;
     },
 
     /**

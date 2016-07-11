@@ -40,7 +40,7 @@
          * </p>
          *
          * <p>
-         * Side child panel's can inform of overflow (overflowPaddings), in orthogonal directions,
+         * Side child panel's can inform of optional content overflow, in orthogonal directions,
          * from content that, for them, is ok to overflow, even if it overlaps with other sibling's content.
          * It's the responsibility of the parent panel to guarantee that these overflows
          * don't leave the parent panel's border box.
@@ -55,7 +55,7 @@
          * </p>
          *
          * <p>
-         * If the corner space is not enough to absorb the overflow paddings,
+         * If the corner space is not enough to absorb the optional content overflow,
          * the excess is converted into paddings of the grid-layout panel itself,
          * requesting new paddings to the layout's parent panel.
          * </p>
@@ -63,10 +63,6 @@
          * @override
          */
         _calcLayout: function(_layoutInfo) {
-
-            // TODO: Do paddings change cycles still occur?
-            // If so, is the detection cost worth it, compared to stopping at the Nth, last attempt,
-            // as is done anyway?
 
             var _me = this;
             if(!_me._children) return;
@@ -81,8 +77,8 @@
             var _alMap  = pvc.BasePanel.parallelLength;
 
             // LayoutChanged bit codes.
-            var NormalPaddingsChanged = 2;
-            var OverflowPaddingsChanged = 4;
+            var ContentOverflowChanged = 2;
+            var OptionalContentOverflowChanged = 4;
             var OwnClientSizeChanged = 8;
             var MarginsChanged = 16;
 
@@ -92,20 +88,22 @@
             // -----------
             // Layout state
 
-            // A sides object that collects request paddings due to overflow paddings of side panels,
+            // A sides object that collects optional content overflow from side panels,
             // collected in phases 1 and 2.
             // Cleared on every phase's iteration, before the first side panel is laid out.
-            // In the end, phase 3, if overflow paddings are not covered by existing margins,
-            // the excess is converted in this panels' own paddings, by requesting a paddings increase
-            // (and consequently repeating the whole layout).
-            var _requestPaddings;
+            // In the end, phase 3, if optional content overflow is not covered by existing margins,
+            // the excess is converted in this panels' own content overflow, and consequently,
+            // repeating its layout with new paddings.
+            var _contentOverflowOptional;
 
             //  Settled in phase1
             var _margins = new pvc_Sides(0);
             var _fillSize = def.copyOwn(_layoutInfo.clientSize);
 
             //  Settled in phase2
-            var _childPaddings = new pvc_Sides(0);
+            var _initialContentOverflow = new pvc_Sides(0);
+            var _contentOverflow = null;
+            var _hasContentOverflow = false;
 
             // ---
 
@@ -120,7 +118,7 @@
             }
 
             _layoutInfo.gridMargins  = new pvc_Sides(_margins);
-            _layoutInfo.gridPaddings = new pvc_Sides(_childPaddings);
+            _layoutInfo.gridPaddings = new pvc_Sides(_contentOverflow);
             _layoutInfo.gridSize     = new pvc_Size(_fillSize);
 
             return _layoutInfo.clientSize; // may have increased.
@@ -132,16 +130,16 @@
                     _me._children.forEach(phase0_initChild);
                 } finally {
                     if(_useLog) {
-                        _me.log("Initial COMMON paddings = " + def.describe(_childPaddings));
+                        _me.log("Initial COMMON paddings = " + def.describe(_initialContentOverflow));
                         _me.log.groupEnd();
                     }
                 }
 
-                var layoutChanged = 0;
+                var layoutChange = 0;
 
                 if(_useLog) _me.log.group("Phase 1 - Determine MARGINS and FILL SIZE from SIDE panels");
                 try {
-                    layoutChanged = phase1();
+                    layoutChange = phase1();
                 } finally {
                     // -> fillSize now contains the size of the CENTER cell and is not changed any more
                     if(_useLog) {
@@ -153,25 +151,26 @@
                 }
 
                 // Size did not increase?
-                if(!layoutChanged) {
+                if(!layoutChange) {
                     if(_useLog) _me.log.group("Phase 2 - Determine COMMON PADDINGS");
                     try {
-                        layoutChanged = phase2();
+                        layoutChange = phase2();
                     } finally {
                         if(_useLog) {
                             _me.log("Final FILL clientSize = " + def.describe({
-                                    width:  (_fillSize.width ||0 - _childPaddings.width ||0),
-                                    height: (_fillSize.height||0 - _childPaddings.height||0)}));
-                            _me.log("Final COMMON paddings = " + def.describe(_childPaddings));
+                                    width:  (_fillSize.width ||0 - _contentOverflow.width ||0),
+                                    height: (_fillSize.height||0 - _contentOverflow.height||0)
+                                }));
+                            _me.log("Final COMMON paddings = " + def.describe(_contentOverflow));
 
                             _me.log.groupEnd();
                         }
                     }
                 }
 
-                // Request paddings don't affect the layoutChanged flag.
-                if(_canChangeInitial && !layoutChanged && _requestPaddings) {
-                    _layoutInfo.requestPaddings = _requestPaddings;
+                // Optional content overflow doesn't affect the `layoutChange` flag.
+                if(_canChangeInitial && !layoutChange && _contentOverflowOptional) {
+                    _layoutInfo.contentOverflow = _contentOverflowOptional;
                 }
             }
 
@@ -193,7 +192,7 @@
                         var oneChildPaddings = child.paddings.resolve(_childLayoutKeyArgs.sizeRef);
 
                         // After the op. it's not a pvc.Side anymore, just an object with same named properties.
-                        _childPaddings = pvc_Sides.resolvedMax(_childPaddings, oneChildPaddings);
+                        _initialContentOverflow = pvc_Sides.resolvedMax(_initialContentOverflow, oneChildPaddings);
                     } else {
                         /*jshint expr:true */
                         def.hasOwn(_aoMap, a) || def.fail.operationInvalid("Unknown anchor value '{0}'", [a]);
@@ -272,7 +271,9 @@
 
                 var canChangeChild = _canChangeInitial && !isLastIteration;
 
-                _requestPaddings = null;
+                _contentOverflowOptional = null;
+                _contentOverflow = new pvc_Sides(_initialContentOverflow);
+                _hasContentOverflow = false;
 
                 var i = -1;
                 var L = _sideChildren.length;
@@ -292,7 +293,7 @@
                         }
 
                         _childLayoutKeyArgs.size      = new pvc_Size(_fillSize);
-                        _childLayoutKeyArgs.paddings  = pvc_Sides.filterAnchor(anchor, _childPaddings);
+                        _childLayoutKeyArgs.paddings  = pvc_Sides.filterAnchor(anchor, _contentOverflow);
                         _childLayoutKeyArgs.canChange = canChangeChild;
 
                         child.layout(_childLayoutKeyArgs);
@@ -303,8 +304,6 @@
                             if(checkChildSizeIncreased(child, canChangeChild)) return OwnClientSizeChanged;
 
                             olen = child[aoLen];
-
-                            checkChildOverflowPaddingsChanged(child, canChangeChild);
                         }
 
                         // Ignore minor changes
@@ -319,6 +318,13 @@
                             _margins[anchor] += olen;
                             _fillSize[aoLen] -= olen;
                         }
+
+                        if(child.isVisible) {
+                            if(checkChildContentOverflowChanged(child, canChangeChild)) _hasContentOverflow = true;
+
+                            // requires an up to date _fillSize
+                            checkChildOptionalContentOverflowChanged(child, canChangeChild);
+                        }
                     } finally {
                         if(_useLog) child.log.groupEnd();
                     }
@@ -329,8 +335,8 @@
             //endregion
 
             //region Phase 2 - Determine COMMON PADDINGS
-            // Cannot process overflow paddings before a full round, and having processed every requestPaddings.
-            // Otherwise, would ask for overflowPaddings that later are covered by "fixed" plot paddings
+            // Cannot process optional content overflow before a full round, and having processed every contentOverflow.
+            // Otherwise, would ask for contentOverflowOptional that later are covered by "fixed" plot paddings
             // as those imposed by axisOffset. See CDF-912
 
             // process size increase, paddings change and paddings loop.
@@ -347,7 +353,7 @@
                         layoutChange = phase2_iteration(i === 1, i === MAX_TIMES);
 
                         // When i < MAX_TIMES, layoutChange can be one of:
-                        //   OwnClientSizeChanged, NormalPaddingsChanged
+                        //   OwnClientSizeChanged, ContentOverflowChanged
                         // WHen i === MAX_TIMES, layoutChange must be 0.
 
                         if(layoutChange && (layoutChange & OwnClientSizeChanged) !== 0) {
@@ -358,7 +364,7 @@
                     } finally {
                         if(_useLog) _me.log.groupEnd();
                     }
-                } while((i < MAX_TIMES) && (layoutChange & NormalPaddingsChanged) !== 0);
+                } while((i < MAX_TIMES) && (layoutChange & ContentOverflowChanged) !== 0);
 
                 return 0;
             }
@@ -381,11 +387,12 @@
                 var children  = _sideChildren.concat(_fillChildren);
                 var layoutChange;
 
-                var i = (isFirstIteration ? sideCount : 0) - 1;
+                // If has content overflow, need to relayout the side panels...
+                var i = (isFirstIteration && !_hasContentOverflow ? sideCount : 0) - 1;
                 var L = children.length;
 
                 // First side child of an iteration resets the request paddings.
-                if(i < 0) _requestPaddings = null;
+                if(i < 0) _contentOverflowOptional = null;
 
                 while(++i < L) {
                     var child  = children[i];
@@ -398,15 +405,15 @@
                         if(child.isVisible) {
                             if(checkChildSizeIncreased(child, canChangeChild)) return OwnClientSizeChanged;
 
-                            if((layoutChange = checkChildPaddingsChanged(child, canChangeChild))) {
+                            if((layoutChange = checkChildContentOverflowChanged(child, canChangeChild))) {
 
                                 // assert canChangeChild
 
-                                // => layoutChange & NormalPaddingsChanged
-                                return NormalPaddingsChanged;
+                                // => layoutChange & ContentOverflowChanged
+                                return ContentOverflowChanged;
                             }
 
-                            if(!isFill) checkChildOverflowPaddingsChanged(child, canChangeChild);
+                            if(!isFill) checkChildOptionalContentOverflowChanged(child, canChangeChild);
 
                             // Position child
                             if(isFill) {
@@ -429,7 +436,7 @@
                 var size, pads;
                 if(isFill) {
                     size = pvc_Size.clone(_fillSize);
-                    pads = new pvc_Sides(_childPaddings);
+                    pads = new pvc_Sides(_contentOverflow);
                 } else {
                     var anchor = child.anchor;
                     var al  = _alMap [anchor];
@@ -439,7 +446,7 @@
                     size[al ] = _fillSize[al];
                     size[aol] = child[aol]; // fixed in phase 1
 
-                    pads = pvc_Sides.filterAnchor(anchor, _childPaddings);
+                    pads = pvc_Sides.filterAnchor(anchor, _contentOverflow);
                 }
 
                 _childLayoutKeyArgs.size = size;
@@ -475,45 +482,6 @@
 
                 child.position[side] = pos;
             }
-
-            function checkChildPaddingsChanged(child, canChangeChild) {
-                var anchor = child.anchor,
-                    requestPaddings = child._layoutInfo.requestPaddings,
-                    layoutChange = 0;
-
-                // Greater paddings are needed?
-                if(requestPaddings) {
-                    if(_useLog) child.log("RequestPaddings=" + def.describe(requestPaddings));
-
-                    // Compare requested paddings with existing paddings
-                    pvc_Sides.getAnchorSides(anchor).forEach(function(side) {
-                        var value = _childPaddings[side] || 0;
-                        var requestValue = Math.floor(10 * (requestPaddings[side] || 0)) / 10;
-
-                        // STABILITY requirement
-                        if(pv.floatGreater(requestValue, value)) {
-                            if(!canChangeChild) {
-                                if(_useLog)
-                                    child.log.warn("CANNOT change but child wanted to: " + side + "=" + requestValue);
-
-                            } else {
-                                layoutChange |= NormalPaddingsChanged;
-                                _childPaddings[side] = requestValue;
-
-                                if(_useLog) child.log("Changed paddings: " + side + " <- " + requestValue);
-                            }
-                        }
-                    });
-
-                    if(layoutChange) {
-                        // Calculate width and height
-                        _childPaddings.width  = _childPaddings.left + _childPaddings.right ;
-                        _childPaddings.height = _childPaddings.top  + _childPaddings.bottom;
-                    }
-                }
-
-                return layoutChange;
-            }
             //endregion
 
             function checkChildSizeIncreased(child, canChangeChild) {
@@ -545,40 +513,82 @@
                 }
             }
 
-            function checkChildOverflowPaddingsChanged(child, canChangeChild) {
+            function checkChildContentOverflowChanged(child, canChangeChild) {
+                var anchor = child.anchor,
+                    contentOverflow = child._layoutInfo.contentOverflow,
+                    layoutChange = 0;
+
+                if(contentOverflow) {
+                    if(_useLog) child.log("ContentOverflow=" + def.describe(contentOverflow));
+
+                    // Compare child content overflow with common content overflow
+                    pvc_Sides.getAnchorSides(anchor).forEach(function(side) {
+                        var value = _contentOverflow[side] || 0;
+                        var valueNew = contentOverflow[side] || 0;
+
+                        // STABILITY requirement
+                        if(pv.floatGreater(Math.floor(10 * valueNew), Math.floor(10 * value))) {
+                            if(!canChangeChild) {
+                                if(_useLog)
+                                    child.log.warn("CANNOT change but child wanted to: " + side + "=" + valueNew);
+
+                            } else {
+                                layoutChange |= ContentOverflowChanged;
+                                _contentOverflow[side] = valueNew;
+
+                                if(_useLog) child.log("Changed content overflow: " + side + " <- " + valueNew);
+                            }
+                        }
+                    });
+
+                    // Calculate width and height
+                    if(layoutChange) pvc_Sides.updateSize(_contentOverflow);
+                }
+
+                return layoutChange;
+            }
+
+            function checkChildOptionalContentOverflowChanged(child, canChangeChild) {
                 var layoutChange = 0;
 
                 // If the layout phase corresponds to a re-layout (chart is a re-render),
-                // don't allow overflowPaddings, since the preserved paddings already account
-                // for the final overflowPaddings in the first render.
+                // don't allow contentOverflowOptional, since the preserved paddings already account
+                // for the final contentOverflowOptional in the first render.
 
-                var overflowPaddings;
-                if(_me.chart._preserveLayout || !(overflowPaddings = child._layoutInfo.overflowPaddings))
+                var contentOverflowOptional;
+                if(_me.chart._preserveLayout || !(contentOverflowOptional = child._layoutInfo.contentOverflowOptional))
                     return layoutChange;
 
-                if(_useLog) child.log("<= overflowPaddings=" + def.describe(overflowPaddings));
+                if(_useLog) child.log("<= contentOverflowOptional=" + def.describe(contentOverflowOptional));
 
                 var ownPaddings = _layoutInfo.paddings;
+                var a_len = child.anchorLength();
 
                 pvc_Sides.getAnchorSides(child.anchor).forEach(function(side) {
-                    if(overflowPaddings.hasOwnProperty(side)) {
-                        var value    = ownPaddings[side] || 0,
+                    if(contentOverflowOptional.hasOwnProperty(side)) {
+                        var value = ownPaddings[side] || 0,
+                            // This is the overflow from the clientSize + padding box.
+                            // If the panel uses a clientSize less than _fillSize, the overflow is not the actual fill overflow.
+                            childOverflow = contentOverflowOptional[side] || 0,
+                            childLen      = child._layoutInfo.size[a_len],
+                            fillOverflow  = Math.max(0, (childLen + childOverflow) - _fillSize[a_len]),
                             // corners absorb some of it
-                            newValue = (Math.floor(10000 * (overflowPaddings[side] || 0)) / 10000) - _margins[side];
+                            valueNew      = Math.max(0, fillOverflow - _margins[side]);
 
-                        if(pv.floatGreater(newValue, value)) {
+                        // 4 decimal places precision
+                        if(Math.floor(10000 * valueNew) > Math.floor(10000 * value)) {
                             if(!canChangeChild) {
                                 if(def.debug >= 2)
-                                    child.log.warn("CANNOT change overflow paddings but child wanted to: " + side + "=" + newValue);
+                                    child.log.warn("CANNOT change optional content overflow but child wanted to: " + side + "=" + valueNew);
                             } else {
-                                layoutChange |= OverflowPaddingsChanged;
+                                layoutChange |= OptionalContentOverflowChanged;
 
                                 // Must preserve existing paddings.
-                                if(!_requestPaddings) _requestPaddings = new pvc_Sides(ownPaddings);
+                                if(!_contentOverflowOptional) _contentOverflowOptional = new pvc_Sides(ownPaddings);
 
-                                _requestPaddings[side] = Math.max(_requestPaddings[side] || 0, newValue);
+                                _contentOverflowOptional[side] = Math.max(_contentOverflowOptional[side] || 0, valueNew);
 
-                                if(_useLog) child.log("Changed overflow paddings " + side + " <- " + newValue);
+                                if(_useLog) child.log("Changed optional content overflow " + side + " <- " + valueNew);
                             }
                         }
                     }

@@ -18,7 +18,8 @@ def
 
     var anchor = options.anchor || this.anchor;
 
-    options.paddings = pvc_Sides.filterAnchor(anchor, chart._axisOffsetPct);
+    // Respect if layout is fixed.
+    if(options.paddings == null) options.paddings = pvc_Sides.filterAnchor(anchor, chart._axisOffsetPct);
 
     // Prevent the border from affecting the box model,
     // providing a static 0 value, independently of the actual drawn value...
@@ -166,7 +167,7 @@ def
             this._calcMaxTextLengthThatFits(); // -> layoutInfo.maxTextWidth, layoutInfo.maxLabelBBox
 
             /* IV - Calculate overflow paddings */
-            this._calcOverflowPaddings();
+            this._calcContentOverflowOptional();
         }
     },
 
@@ -253,25 +254,25 @@ def
         return Math.max(length, 0);
     },
 
-    _calcOverflowPaddings: function() {
+    _calcContentOverflowOptional: function() {
         if(!this._layoutInfo.restrictions.canChange) {
-            if(def.debug >= 2) this.log.warn("Layout cannot change. Skipping calculation of overflow paddings.");
+            if(def.debug >= 2) this.log.warn("Layout cannot change. Skipping calculation of optional content overflow.");
             return;
         }
 
-        if(this.showLabels) this._calcOverflowPaddingsFromLabelBBox();
+        if(this.showLabels)
+            this._calcContentOverflowOptionalFromLabelBBox();
     },
 
-    _calcOverflowPaddingsFromLabelBBox: function() {
-        var overflowPaddings = null,
+    _calcContentOverflowOptionalFromLabelBBox: function() {
+        var contentOverflowOptional = null,
             me = this,
             li = me._layoutInfo,
-            ticks = li.ticks,
-            tickCount = ticks.length;
+            ticks = li.ticks;
 
-        if(tickCount) {
+        // Only determine optional overflow if there is no normal overflow...
+        if(ticks.length) {
             var ticksBBoxes   = li.ticksBBoxes || this._calcTicksLabelBBoxes(li),
-                paddings      = li.paddings,
                 isTopOrBottom = me.isAnchorTopOrBottom(),
                 begSide       = isTopOrBottom ? 'left'  : 'bottom',
                 endSide       = isTopOrBottom ? 'right' : 'top',
@@ -288,7 +289,7 @@ def
                     if(sideOverflow > 1) {
                         // Discount this panels' paddings
                         // cause they're, in principle, empty space that can be occupied.
-                        sideOverflow -= (paddings[side] || 0);
+                        sideOverflow -= (li.paddings[side] || 0);
                         if(sideOverflow > 1) {
                             // reduction of space causes reduction of band width
                             // which in turn usually causes the overflowPadding to increase,
@@ -296,12 +297,12 @@ def
                             // Ask a little bit more to hit the target faster.
                             if(isDiscrete) sideOverflow *= 1.05;
 
-                            if(!overflowPaddings) {
-                                overflowPaddings= def.set({}, side, sideOverflow);
+                            if(!contentOverflowOptional) {
+                                contentOverflowOptional = def.set({}, side, sideOverflow);
                             } else {
-                                var currrOverflowPadding = overflowPaddings[side];
+                                var currrOverflowPadding = contentOverflowOptional[side];
                                 if(currrOverflowPadding == null || (currrOverflowPadding < sideOverflow))
-                                    overflowPaddings[side] = sideOverflow;
+                                    contentOverflowOptional[side] = sideOverflow;
                             }
                         }
                     }
@@ -313,11 +314,11 @@ def
                 evalLabelSideOverflow(labelBBox, endSide, false, index);
             });
 
-            if(def.debug >= 6 && overflowPaddings)
-                me.log("OverflowPaddings = " + def.describe(overflowPaddings));
+            if(def.debug >= 6 && contentOverflowOptional)
+                me.log("ContentOverflowOptional = " + def.describe(contentOverflowOptional));
         }
 
-        li.overflowPaddings = overflowPaddings;
+        li.contentOverflowOptional = contentOverflowOptional;
     },
 
     _calcMaxTextLengthThatFits: function() {
@@ -928,13 +929,12 @@ def
             .override('defaultColor', def.fun.constant("#666666"))
             // ex: anchor = bottom
             .lock(this.anchorOpposite(), 0) // top (of the axis panel)
-            .lock(begin_a, rMin )  // left
+            .lock(begin_a, rMin ) // left
             .lock(size_a,  rSize) // width
             .pvMark
             .zOrder(30)
             .strokeDasharray(null) // don't inherit from parent panel
-            .lineCap('square')     // So that begin/end ticks better join with the rule
-            ;
+            .lineCap('square');    // So that begin/end ticks better join with the rule
 
         if(this.isDiscrete) {
             if(this.useCompositeAxis)

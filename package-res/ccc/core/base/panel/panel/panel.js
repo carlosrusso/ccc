@@ -525,7 +525,9 @@ def
         li.sizeIncrease       = (sizeIncrease.width       || sizeIncrease.height      ) ? sizeIncrease       : null;
 
         if(li.sizeIncrease) {
-            // Update margins and paddings
+            // Update margins and paddings. This is specially relevant on the root panel,
+            // where no subsequent layout will occur, and it is therefore crucial to leave margins and paddings
+            // in sync with the inner layout.
             var sizeRef2 = def.copyOwn(sizeRef);
             if(sizeIncrease.width ) sizeRef2.width  += sizeIncrease.width;
             if(sizeIncrease.height) sizeRef2.height += sizeIncrease.height;
@@ -785,21 +787,25 @@ def
                     if(child.isVisible) {
                         resized = checkChildResize.call(this, child, canResize);
                         if(resized) return false; // stop
-                        
-                        var requestPaddings = child._layoutInfo.requestPaddings;
+
+                        // When DockingGridPanel needs to accommodate for child content overflow,
+                        // it increases its own paddings.
+                        // Note that increased paddings will be provided by the parent panel,
+                        // but at the cost of a decreased client size.
+                        var contentOverflow = child._layoutInfo.contentOverflow;
                   
-                        if(checkPaddingsChanged(paddings, requestPaddings)) {
-                            paddings = requestPaddings;
+                        if(checkContentOverflowChanged(paddings, contentOverflow)) {
+                            paddings = contentOverflow;
 
                             // Child wants to repeat its layout with != paddings
                             if(remTimes > 0) {
                                 paddings = new pvc_Sides(paddings);
-                                if(useLog) child.log("Child requested paddings change: " + def.describe(paddings));
+                                if(useLog) child.log("Child changed content overflow: " + def.describe(paddings));
                                 return true; // again
                             }
 
                             if(useLog)
-                                child.log.warn("Child requests paddings change but iterations limit has been reached.");
+                                child.log.warn("Child content overflow changed, but iterations limit has been reached.");
                             // ignore overflow
                         }
 
@@ -819,13 +825,13 @@ def
             return resized;
         }
 
-        function checkPaddingsChanged(paddings, newPaddings) {
-            if(!newPaddings) return false;
+        function checkContentOverflowChanged(paddings, contentOverflow) {
+            if(!contentOverflow) return false;
 
             // true if stopped, false otherwise
             return def.query(pvc_Sides.names).each(function(side) {
                 var curPad = (paddings && paddings[side]) || 0,
-                    newPad = (newPaddings && newPaddings[side]) || 0;
+                    newPad = (contentOverflow && contentOverflow[side]) || 0;
                  if(Math.abs(newPad - curPad) >= 0.1) return false; // Stop iteration
             });
         }

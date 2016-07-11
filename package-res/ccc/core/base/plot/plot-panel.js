@@ -16,7 +16,12 @@ def
     //this.borderWidth = 0;
 
     // options.sizeMin = plot.option('SizeMin');
-    options.paddings = chart._axisOffsetPct;
+
+    // Respect if layout is fixed.
+    if(options.paddings == null) {
+        // _axisOffsetPct is only defined for cartesian charts.
+        options.paddings = chart._axisOffsetPct;
+    }
 
     this.base(chart, parent, options);
     
