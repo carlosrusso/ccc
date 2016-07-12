@@ -388,7 +388,8 @@
 
         <c:property name="plotSizeMin" type="number string pvc.options.varia.Size" category="Layout">
             <c:documentation>
-                The minimum size of the plot panel, in pixel units or as a percentage.
+                The minimum size of the plot panel, in pixel units.
+                If a percentage is specified, this option is ignored.
 
                 To determine the actual minimum size of the plot panel,
                 the chart takes into account other restrictions imposed by options such as:

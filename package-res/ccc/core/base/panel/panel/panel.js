@@ -336,7 +336,7 @@ def
         var sizeAvailable = def.get(ka, 'size');
         var sizeRef = def.get(ka, 'sizeRef') || (sizeAvailable && def.copyOwn(sizeAvailable));
 
-        var sizeMin = !this.chart.parent ? this.sizeMin.resolve(sizeRef) : {width: 0, height: 0};
+        var sizeMin = !this.chart.parent ? this.sizeMin.resolve(null) : {width: 0, height: 0};
         var sizeMax = this.sizeMax.resolve(sizeRef);
         var sizeFix = this.size   .resolve(sizeRef);
 
