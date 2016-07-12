@@ -203,8 +203,7 @@ define(function() {
                 ]
             },
             {
-                crosstabMode: false,
-                readers:      "category, value, value2"
+                crosstabMode: false
             }
         ]
     };

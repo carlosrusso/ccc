@@ -1,8 +1,9 @@
 define([
+    "ccc/def",
     "ccc/pvc",
     "test/utils",
     "test/data-1"
-], function(pvc, utils, datas) {
+], function(def, pvc, utils, datas) {
 
     describe("pvc.GridDockingPanel", function() {
 
