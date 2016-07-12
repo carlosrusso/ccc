@@ -104,6 +104,8 @@ def
         var _margins = new pvc_Sides(0);
         var _fillSize = def.copyOwn(_layoutInfo.clientSize);
         var _fillSizeMin = this._getFillSizeMin();
+        if(_fillSizeMin) _fillSizeMin = _fillSizeMin.resolve(_layoutInfo.clientSize);
+
         // How much has been incremented on our own client size,
         // due to calling checkChildSizeIncreased or checkFillSizeMin
         var ownClientSizeIncrease = {width: 0, height: 0};

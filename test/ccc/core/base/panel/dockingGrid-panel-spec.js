@@ -15,7 +15,7 @@ define([
                 margins:  0,
                 paddings: 0,
                 contentMargins:  0,
-                baseAxisFont:    "14px sans-serif",
+                baseAxisFont: "14px sans-serif",
                 baseAxisOffset:  0.3,
                 baseAxisOverlappedLabelsMode: 'leave',
                 plotFrameVisible: false,
@@ -28,13 +28,43 @@ define([
             chart.basePanel._create({});
 
             // layout has been performed.
-            var li = chart._gridDockPanel._layoutInfo;
+            var li = chart.contentPanel.getLayout();
             expect(li instanceof Object).toBe(true);
 
             // optional label overflow that exceed the axis offset paddings and grid child margins
             // are translated into dockingGrid panel paddings
             expect(li.paddings.right).toBe(0);
             expect(li.paddings.left).toBe(0);
+        });
+    });
+
+    describe("Option plotSizeMin", function() {
+
+        function createChart(chartType, options) {
+            var dataSpec = datas['cross-tab, category missing on first series'];
+            var chartOptions = def.setDefaults(options, {
+                width:       200,
+                height:      300,
+                animate:     false,
+                interactive: false
+            });
+
+            var chart = utils.createChart(chartType, chartOptions, dataSpec);
+            chart.basePanel._create({});
+            // layout has been performed.
+
+            return chart;
+        }
+
+        it("it is respected when specified as a number", function() {
+            var chart = createChart(pvc.BarChart, {
+                plotSizeMin: 400
+            });
+
+            var li = chart.contentPanel.getLayout();
+
+            expect(li.gridSize.width ).not.toBeLessThan(400);
+            expect(li.gridSize.height).not.toBeLessThan(400);
         });
     });
 });

@@ -130,6 +130,8 @@ define([
             width:  400,
             height: 400,
             title:  "Bar chart",
+            animate:     false,
+            interactive: false,
             legend: true,
             // Avoid being sensitive to default values that affect legend layout.
             legendPaddings: 5,

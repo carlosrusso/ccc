@@ -19,7 +19,7 @@ def
         'ortho': pvc_CartesianAxis
     },
 
-    _gridDockPanel: null,
+    contentPanel: null,
 
     _defaultAxisBandSizeRatio: 0.9,
 
@@ -153,7 +153,10 @@ def
         this._createFocusWindow();
 
         // Create the grid/docking panel
-        this._gridDockPanel = new pvc.CartesianGridDockingPanel(this, parentPanel, {
+        this.contentPanel =
+        /** @deprecated */
+        this._gridDockPanel =
+            new pvc.CartesianGridDockingPanel(this, parentPanel, {
             margins:  contentOptions.margins,
             paddings: contentOptions.paddings
         });
@@ -169,7 +172,7 @@ def
         }, this);
         
         // Create plot content panels inside the grid docking panel
-        this.base(this._gridDockPanel, {
+        this.base(this.contentPanel, {
             clickAction:       contentOptions.clickAction,
             doubleClickAction: contentOptions.doubleClickAction
         });
@@ -217,7 +220,7 @@ def
                 var titlePanel = panel && panel.titlePanel;
                 if(titlePanel && this._preserveLayout) state = titlePanel._getLayoutState();
 
-                titlePanel = new pvc.AxisTitlePanel(this, this._gridDockPanel, axis, {
+                titlePanel = new pvc.AxisTitlePanel(this, this.contentPanel, axis, {
                     title:    title,
                     font:     opts('TitleFont') || opts('Font'),
                     anchor:   opts('Position'),
@@ -234,7 +237,7 @@ def
             // This is done before replacing the old panel by a new one.
             state = panel && this._preserveLayout ? panel._getLayoutState() : undefined;
 
-            var panel = new pvc.AxisPanel(this, this._gridDockPanel, axis, {
+            var panel = new pvc.AxisPanel(this, this.contentPanel, axis, {
                 anchor:            opts('Position'),
                 size:              state ? state.size : opts('Size'),
                 margins:           state && state.margins,
