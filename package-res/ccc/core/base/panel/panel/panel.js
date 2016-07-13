@@ -317,6 +317,9 @@ def
      * @param {boolean} [ka.canChange=true] Whether this is a last time layout.
      */
     layout: function(ka) {
+
+        var useLog = def.debug >= 10;
+
         var layoutInfoPrev = this._layoutInfo || null;
         if(layoutInfoPrev) {
             if(!def.get(ka, 'force', false)) return;
@@ -334,7 +337,7 @@ def
         // and the sizeFix.width == null test will fail, below, resulting in an error being thrown.
 
         var sizeAvailable = def.get(ka, 'size');
-        var sizeRef = def.get(ka, 'sizeRef') || (sizeAvailable && def.copyOwn(sizeAvailable));
+        var sizeRef = def.get(ka, 'sizeRef') || (sizeAvailable && pvc_Size.clone(sizeAvailable));
 
         var sizeMin = !this.chart.parent ? this.sizeMin.resolve(null) : {width: 0, height: 0};
         var sizeMax = this.sizeMax.resolve(sizeRef);
@@ -351,9 +354,9 @@ def
             if(sizeFix.width == null || sizeFix.height == null)
                 throw def.error.operationInvalid("Panel layout without width or height set.");
 
-            sizeAvailable = def.copyOwn(sizeFix);
+            sizeAvailable = pvc_Size.clone(sizeFix);
 
-            if(!sizeRef) sizeRef = def.copyOwn(sizeAvailable);
+            if(!sizeRef) sizeRef = pvc_Size.clone(sizeAvailable);
         }
 
         // assert sizeAvailable && sizeRef
@@ -382,21 +385,39 @@ def
 
         // ---
 
-        // This client size is not affected by sizeMin, to that, below, clientSize increase detection works.
-        var clientSizeAvailableInput = pvc_Size.deflate(sizeAvailable, spaceW, spaceH);
-
-        if(def.debug >= 10) {
-            this.log("Size          -> " + def.describe(sizeAvailable));
-            this.log(" Margins      -> " + def.describe(margins));
-            this.log("  Paddings    -> " + def.describe(paddings));
-            this.log("   ClientSize -> " + def.describe(clientSizeAvailableInput));
-        }
+        var sizeAvailableInput = pvc_Size.clone(sizeAvailable);
 
         // Apply bounds to available size
         pvc_Size.applyMinMax(sizeAvailable, sizeMin, sizeMax);
 
+        // Register initial size increase due to sizeMin.
+        var sizeIncrease = {
+            width:  Math.max(0, sizeAvailable.width  - sizeAvailableInput.width ),
+            height: Math.max(0, sizeAvailable.height - sizeAvailableInput.height)
+        };
+
+        // ---
+
         var clientSizeAvailable = pvc_Size.deflate(sizeAvailable, spaceW, spaceH);
         var clientSizeFix       = pvc_Size.deflate(sizeFix, spaceW, spaceH);
+
+        // For detecting clientSize increase after calling _calcLayout.
+        var clientSizeAvailableInput = pvc_Size.clone(clientSizeAvailable);
+
+        // ---
+
+        if(useLog) {
+            if((sizeAvailable.width  - sizeAvailableInput.width) ||
+               (sizeAvailable.height - sizeAvailableInput.height)) {
+                this.log("Size          -> " + def.describe(sizeAvailableInput));
+                this.log("Size (min/max)-> " + def.describe(sizeAvailable));
+            } else {
+                this.log("Size          -> " + def.describe(sizeAvailable));
+            }
+            this.log(" Margins      -> " + def.describe(margins));
+            this.log("  Paddings    -> " + def.describe(paddings));
+            this.log("   ClientSize -> " + def.describe(clientSizeAvailable));
+        }
 
         /**
          * The `ILayoutInfoRestrictions` interface contains restriction information that
@@ -508,7 +529,10 @@ def
                  *
                  * @type {pvc.visual.ILayoutInfoRestrictions}
                  */
-                restrictions: liRestrictions
+                restrictions: liRestrictions,
+
+                sizeIncrease: null,
+                clientSizeIncrease: null
             };
 
         // ---
@@ -519,7 +543,6 @@ def
 
         if(!this.isVisible) {
             li.size = {width: 0, height: 0};
-            li.sizeIncrease = li.clientSizeIncrease = null;
         } else {
             // TODO: auto-clip when clientSizeNeeds exceeds clientSizeMax ?
 
@@ -527,7 +550,6 @@ def
             li.clientSize = pvc_Size.applyMinMax(clientSizeNeeds, liRestrictions.clientSizeMin, liRestrictions.clientSizeMax);
 
             var clientSizeIncrease = {width: 0, height: 0};
-            var sizeIncrease = {width: 0, height: 0};
 
             // Assuming li.size is not mutated by _calcLayout code.
             var sizeNeeds = li.size;
@@ -535,27 +557,25 @@ def
             processSizeDirection.call(this, 'width' );
             processSizeDirection.call(this, 'height');
 
-            li.clientSizeIncrease = (clientSizeIncrease.width || clientSizeIncrease.height) ? clientSizeIncrease : null;
-            li.sizeIncrease       = (sizeIncrease.width       || sizeIncrease.height      ) ? sizeIncrease       : null;
+            // Only publish size increase objects if these have any increase
+            if(clientSizeIncrease.width || clientSizeIncrease.height) li.clientSizeIncrease = clientSizeIncrease;
+            if(sizeIncrease.width       || sizeIncrease.height      ) li.sizeIncrease       = sizeIncrease;
 
             if(li.sizeIncrease && (!marginsArg || !paddingsArg)) {
                 // Update margins and paddings. This is specially relevant on the root panel,
                 // where no subsequent layout will occur, and it is therefore crucial to leave margins and paddings
                 // in sync with the inner layout.
-                var sizeRef2 = def.copyOwn(sizeRef);
+                var sizeRef2 = pvc_Size.clone(sizeRef);
                 if(sizeIncrease.width ) sizeRef2.width  += sizeIncrease.width;
                 if(sizeIncrease.height) sizeRef2.height += sizeIncrease.height;
 
                 if(!marginsArg)  margins  = pvc_Sides.inflate(this.margins .resolve(sizeRef2), borderHalf);
                 if(!paddingsArg) paddings = pvc_Sides.inflate(this.paddings.resolve(sizeRef2), borderHalf);
 
-                spaceW = margins.width  + paddings.width;
-                spaceH = margins.height + paddings.height;
-
-                li.margins = margins;
+                li.margins  = margins;
                 li.paddings = paddings;
-                li.spacings.width = spaceW;
-                li.spacings.height = spaceH;
+                li.spacings.width  = margins.width  + paddings.width;
+                li.spacings.height = margins.height + paddings.height;
             }
         }
 
@@ -572,11 +592,13 @@ def
 
         // ---
 
-        if(def.debug >= 10) {
+        if(useLog) {
             this.log("   ClientSize <- " + def.describe(li.clientSize));
+            if(li.clientSizeIncrease) this.log("   ClientSize+<- " + def.describe(li.clientSizeIncrease));
             this.log("  Paddings    <- " + def.describe(li.paddings));
             this.log(" Margins      <- " + def.describe(li.margins));
             this.log("Size          <- " + def.describe(li.size));
+            if(li.sizeIncrease) this.log("Size+         <- " + def.describe(li.sizeIncrease));
         }
 
         // ---
@@ -586,8 +608,6 @@ def
         function processSizeDirection(a_len) {
             var addLen = clientSizeNeeds[a_len] - clientSizeAvailableInput[a_len];
             if(addLen > pv.epsilon) {
-                if(def.debug >= 10) this.log("Increased client " + a_len + " by " + addLen);
-
                 clientSizeIncrease[a_len] = addLen;
 
                 // Determine the required addSize taking into account the new values of child margins and
@@ -603,8 +623,6 @@ def
                 if(pct > 0) addLen = addLen / (1 - pct);
 
                 sizeIncrease[a_len] = addLen;
-
-                if(def.debug >= 10) this.log("Increased outer " + a_len + " by " + addLen + " (pct = " + pct + ")");
 
                 // Any fixed margins/paddings components are already in sizeNeeds.
                 sizeNeeds[a_len] += addLen;
