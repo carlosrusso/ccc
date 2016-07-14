@@ -128,7 +128,7 @@ def
 
         function processAxis(axis) {
             var offset = axis && axis.option('Offset');
-            if(offset != null && offset > 0 && offset < 0.5) {
+            if(offset != null && offset >= 0 && offset < 0.5) {
                 if(axis.orientation === 'x') {
                     setSide('left',  offset);
                     setSide('right', offset);

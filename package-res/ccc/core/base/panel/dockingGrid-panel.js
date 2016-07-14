@@ -569,7 +569,7 @@ def
                         _layoutInfo.clientSize[a_len] += addLen;
 
                         if(_useLog)
-                            _me.log.warn("Increasing client " + a_len + " by " + addLen + " to satisfy minimum fill width.");
+                            _me.log.warn("Increasing client " + a_len + " by " + addLen + " to satisfy minimum fill " + a_len + ".");
                     }
                 }
             }
@@ -631,16 +631,16 @@ def
                 if(contentOverflowOptional.hasOwnProperty(side)) {
                     // Precision is 1/10th of a pixel.
 
-                    var value = pvc.roundPixel.down(ownPaddings[side] || 0),
+                    var value = ownPaddings[side] || 0,
                         // This is the overflow from the clientSize + padding box.
                         // If the panel uses a clientSize less than _fillSize, the overflow is not the actual fill overflow.
                         childOverflow = contentOverflowOptional[side] || 0,
                         childLen      = child._layoutInfo.size[a_len],
                         fillOverflow  = Math.max(0, (childLen + childOverflow) - _fillSize[a_len]),
                         // corners absorb some of it
-                        valueNew = pvc.roundPixel.up(Math.max(0, fillOverflow - _margins[side]));
+                        valueNew = Math.max(0, fillOverflow - _margins[side]);
 
-                    if(valueNew > value) {
+                    if(valueNew - value > pvc.roundPixel.epsilon) {
                         if(!canChangeChild) {
                             if(def.debug >= 2)
                                 child.log.warn("CANNOT change optional content overflow but child wanted to: " + side + "=" + valueNew);
