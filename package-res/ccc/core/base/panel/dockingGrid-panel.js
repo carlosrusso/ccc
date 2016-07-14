@@ -281,48 +281,63 @@ def
             var i = -1;
             var L = _sideChildren.length;
             while(++i < L) {
-                var child  = _sideChildren[i];
+                var child = _sideChildren[i];
 
                 if(_useLog) child.log.group("Layout");
                 try {
-                    var anchor = child.anchor;
-                    var aoLen  = _aolMap[anchor];
+                    var anchor  = child.anchor;
+                    var p_alen  = _alMap [anchor];
+                    var p_aolen = _aolMap[anchor];
 
                     // Remove previous iteration's length from layout state
                     var olenPrev = sideChildrenSizes[i];
                     if(olenPrev != null) {
-                        _margins[anchor] -= olenPrev;
-                        _fillSize[aoLen] += olenPrev;
+                        _margins[anchor]  -= olenPrev;
+                        _fillSize[p_aolen] += olenPrev;
                     }
 
-                    _childLayoutKeyArgs.size = new pvc_Size(_fillSize);
-                    _childLayoutKeyArgs.paddings = {}; // 0
+                    var sizeRef = {width: null, height: null};
+                    // E.g. xAxis left/right paddings are relative to the fill area width,
+                    // to satisfy axis offset semantics.
+                    sizeRef[p_alen]  = _fillSize[p_alen];
+                    // E.g. xAxisSize option is relative to the grid's client height.
+                    sizeRef[p_aolen] = _layoutInfo.clientSize[p_aolen];
+
+                    _childLayoutKeyArgs.sizeAvailable = new pvc_Size(_fillSize);
+                    _childLayoutKeyArgs.sizeRef = sizeRef;
+                    //_childLayoutKeyArgs.paddings = null;//{}; // 0
                     _childLayoutKeyArgs.canChange = canChangeChild;
 
                     child.layout(_childLayoutKeyArgs);
 
-                    var olen = 0;
+                    var olen;
 
-                    if(child.isVisible) {
+                    if(!child.isVisible) {
+                        olen = 0;
+                    } else {
+                        // Check non-ortho length increase
                         if(checkChildSizeIncreased(child, canChangeChild)) return OwnClientSizeChanged;
 
-                        olen = child[aoLen];
+                        // Check ortho-length changes
+                        if(olenPrev == null || Math.abs(child[p_aolen] - olenPrev) > pvc.roundPixel.epsilon) {
+                            olen = child[p_aolen];
+                        } else {
+                            olen = olenPrev;
+                        }
                     }
 
-                    // Ignore minor changes
-                    if(Math.abs(olen - olenPrev) < pvc.roundPixel.epsilon) {
-                        olen = olenPrev;
-                    } else {
+                    if(olenPrev == null || olen != olenPrev) {
+                        console.log("Child changed ortho length!", {olen: olen, olenPrev: olenPrev});
                         layoutChange |= MarginsChanged;
                     }
 
                     sideChildrenSizes[i] = olen;
                     if(olen) {
-                        _margins[anchor] += olen;
-                        _fillSize[aoLen] -= olen;
+                        _margins[anchor]  += olen;
+                        _fillSize[p_aolen] -= olen;
                     }
 
-                    // requires an updated _fillSize
+                    // Requires an updated _fillSize
                     if(child.isVisible)
                         checkChildOptionalContentOverflowChanged(child, canChangeChild);
 
