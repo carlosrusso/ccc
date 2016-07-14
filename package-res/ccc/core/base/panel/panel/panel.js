@@ -298,19 +298,31 @@ def
      * @param {object}  [ka] Keyword arguments.
      * @param {boolean} [ka.force=false] Indicates that the layout should be
      * performed even if it has already been done.
-     * @param {pvc.ISize} [ka.size] The total size available for the panel.
+     *
+     * @param {pvc.ISize} [ka.sizeAvailable] The size available for the panel to layout.
      *
      * On root panels this argument need not be specified,
      * and the panels' {@link #size} is used as default.
      *
+     * @param {pvc.ISize} [ka.size] The fixed size to use in the layout,
+     * instead of the panel's {@link #size} property.
+     *
+     * Defaults to the panel's {@link #size}.
+     *
      * @param {pvc.ISize} [ka.sizeRef] The size to use for percentage size calculations.
      * Typically, this is the _client size_ of the parent.
      *
-     * @param {pvc.Sides} [ka.paddings] The paddings to use in the layout.
+     * Defaults to `ka.sizeAvailable`, or, when the latter is also unspecified,
+     * to the panel's fixed size
+     * (either specified through `ka.size` or read from {@link #size}).
+     *
+     * @param {pvc.Sides} [ka.paddings] The paddings to use in the layout,
+     * instead of the panel's {@link #paddings} property.
      *
      * Defaults to the panel's {@link #paddings}.
      *
-     * @param {pvc.Sides} [ka.margins] The margins to use in the layout.
+     * @param {pvc.Sides} [ka.margins] The margins to use in the layout,
+     * instead of the panel's {@link #margins} property.
      *
      * Defaults to the panel's {@link #margins}.
      *
@@ -336,14 +348,14 @@ def
         // then all of sizeFix/Min/Max will have width and height equal to null,
         // and the sizeFix.width == null test will fail, below, resulting in an error being thrown.
 
-        var sizeAvailable = def.get(ka, 'size');
+        var sizeAvailable = def.get(ka, 'sizeAvailable');
         var sizeRef = def.get(ka, 'sizeRef') || (sizeAvailable && pvc_Size.clone(sizeAvailable));
 
         var sizeMin = !this.chart.parent ? this.sizeMin.resolve(null) : {width: 0, height: 0};
         var sizeMax = this.sizeMax.resolve(sizeRef);
-        var sizeFix = this.size   .resolve(sizeRef);
+        var sizeFix = def.get(ka, 'size') || this.size.resolve(sizeRef);
 
-        // Normalize
+        // Normalize sizeMax and sizeFix
         pvc_Size.applyMin(sizeMax, sizeMin);
         pvc_Size.applyMinMax(sizeFix, sizeMin, sizeMax);
 
@@ -377,9 +389,6 @@ def
             ? pvc_Sides.updateSize(paddingsArg)
             : pvc_Sides.inflate(this.paddings.resolve(sizeRef), borderHalf);
 
-        var paddingsMin = def.get(ka, 'paddingsMin');
-        if(paddingsMin) paddings = pvc_Sides.resolvedMax(paddings, paddingsMin);
-
         var spaceW = margins.width  + paddings.width;
         var spaceH = margins.height + paddings.height;
 
@@ -390,7 +399,7 @@ def
         // Apply bounds to available size
         pvc_Size.applyMinMax(sizeAvailable, sizeMin, sizeMax);
 
-        // Register initial size increase due to sizeMin.
+        // Register any initial size increase due to sizeMin.
         var sizeIncrease = {
             width:  Math.max(0, sizeAvailable.width  - sizeAvailableInput.width ),
             height: Math.max(0, sizeAvailable.height - sizeAvailableInput.height)
@@ -594,11 +603,11 @@ def
 
         if(useLog) {
             this.log("   ClientSize <- " + def.describe(li.clientSize));
-            if(li.clientSizeIncrease) this.log("   ClientSize+<- " + def.describe(li.clientSizeIncrease));
+            if(li.clientSizeIncrease) this.log("             (+) " + def.describe(li.clientSizeIncrease));
             this.log("  Paddings    <- " + def.describe(li.paddings));
             this.log(" Margins      <- " + def.describe(li.margins));
             this.log("Size          <- " + def.describe(li.size));
-            if(li.sizeIncrease) this.log("Size+         <- " + def.describe(li.sizeIncrease));
+            if(li.sizeIncrease) this.log("             (+) " + def.describe(li.sizeIncrease));
         }
 
         // ---
@@ -809,7 +818,7 @@ def
                 if(useLog) child.log.group("Iteration #" + (iteration + 1) + " / " + maxTimes);
                 try {
 
-                    childKeyArgs.size      = new pvc_Size(remSize);
+                    childKeyArgs.sizeAvailable = new pvc_Size(remSize);
                     childKeyArgs.paddings  = paddings;
                     childKeyArgs.canChange = remTimes > 0;
 

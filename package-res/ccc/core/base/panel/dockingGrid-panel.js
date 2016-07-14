@@ -86,7 +86,7 @@ def
         var MarginsChanged = 16;
 
         // keyArgs for child.layout() calls.
-        var _childLayoutKeyArgs = {force: true, sizeRef: _layoutInfo.clientSize};
+        var _childLayoutKeyArgs = {force: true};
 
         // -----------
         // Layout state
@@ -388,6 +388,7 @@ def
             var children  = _sideChildren.concat(_fillChildren);
             var layoutChange;
 
+            // TODO: Can optimize these cases or not?
             // If has content overflow, need to relayout the side panels...
             var i = (isFirstIteration && !_hasContentOverflow ? sideCount : 0) - 1;
             i = -1;
@@ -436,23 +437,30 @@ def
         }
 
         function phase2_layoutChild(child, canChangeChild, isFill) {
-            var size, pads;
+            var sizeAvail, sizeFix, sizeRef, pads;
             if(isFill) {
-                size = pvc_Size.clone(_fillSize);
-                pads = def.copyOwn(_contentOverflow);
+                sizeAvail = pvc_Size.clone(_fillSize);
+                sizeRef   = _fillSize;
+                pads      = def.copyOwn(_contentOverflow);
             } else {
                 var anchor = child.anchor;
                 var al  = _alMap [anchor];
                 var aol = _aolMap[anchor];
 
-                size = {width: null, height: null};
-                size[al ] = _fillSize[al];
-                size[aol] = child[aol]; // fixed in phase 1
+                sizeFix = {width: null, height: null};
+                sizeFix[al ] = _fillSize[al];
+                sizeFix[aol] = child[aol]; // fixed in phase 1
+
+                sizeRef = {width: null, height: null};
+                sizeRef[al ] = _fillSize[al];
+                sizeRef[aol] = _layoutInfo.clientSize[aol];
 
                 pads = def.copyOwn(pvc_Sides.filterAnchor(anchor, _contentOverflow));
             }
 
-            _childLayoutKeyArgs.size = size;
+            _childLayoutKeyArgs.sizeAvailable = sizeAvail;
+            _childLayoutKeyArgs.size = sizeFix;
+            _childLayoutKeyArgs.sizeRef = sizeRef;
             _childLayoutKeyArgs.paddings = pads;
             _childLayoutKeyArgs.canChange = canChangeChild;
 
@@ -563,11 +571,10 @@ def
                 // Compare child content overflow with common content overflow
                 pvc_Sides.getAnchorSides(anchor).forEach(function(side) {
                     // Precision is 1/10th of a pixel.
-                    // Round overflow upward.
 
                     var value    = _contentOverflow[side] || 0;
-                    var valueNew = pvc.roundPixel.up(contentOverflow[side] || 0);
-                    if(valueNew > value) {
+                    var valueNew = contentOverflow[side] || 0;
+                    if((valueNew - value) > pvc.roundPixel.epsilon) {
                         if(!canChangeChild) {
                             if(_useLog)
                                 child.log.warn("CANNOT change but child wanted to: " + side + "=" + valueNew);
