@@ -76,7 +76,6 @@ def
 
         // Anchor properties conversion maps.
         var _aolMap = pvc.BasePanel.orthogonalLength;
-        var _aoMap  = pvc.BasePanel.relativeAnchor;
         var _alMap  = pvc.BasePanel.parallelLength;
 
         // LayoutChanged bit codes.
@@ -134,11 +133,11 @@ def
 
         function doLayout() {
             var layoutChange = 0;
-            if(_useLog) _me.log.group("Phase 0 - Initialize child panels");
+            //if(_useLog) _me.log.group("Phase 0 - Initialize child panels");
             try {
                 _me._children.forEach(phase0_initChild);
             } finally {
-                if(_useLog) _me.log.groupEnd();
+            //    if(_useLog) _me.log.groupEnd();
             }
 
             if(_useLog) _me.log.group("Phase 1 - Determine MARGINS and FILL SIZE from SIDE panels");
@@ -164,12 +163,11 @@ def
                     layoutChange = phase2();
                 } finally {
                     if(_useLog) {
-                        _me.log("Final FILL clientSize = " + def.describe({
-                                width:  (_fillSize.width ||0 - _contentOverflow.width ||0),
-                                height: (_fillSize.height||0 - _contentOverflow.height||0)
+                        _me.log("Final COMMON paddings  = " + def.describe(_contentOverflow));
+                        _me.log("Final FILL client size = " + def.describe({
+                                width:  (_fillSize.width ||0) - (_contentOverflow.width ||0),
+                                height: (_fillSize.height||0) - (_contentOverflow.height||0)
                             }));
-                        _me.log("Final COMMON paddings = " + def.describe(_contentOverflow));
-
                         _me.log.groupEnd();
                     }
                 }
@@ -193,14 +191,10 @@ def
         function phase0_initChild(child) {
             var a = child.anchor;
             if(a) {
-                if(a === 'fill') {
+                if(a === 'fill')
                     _fillChildren.push(child);
-                } else {
-                    /*jshint expr:true */
-                    def.hasOwn(_aoMap, a) || def.fail.operationInvalid("Unknown anchor value '{0}'", [a]);
-
+                else
                     _sideChildren.push(child);
-                }
             }
         }
         //endregion
@@ -576,15 +570,14 @@ def
         }
 
         function checkChildContentOverflowChanged(child, canChangeChild) {
-            var anchor = child.anchor;
-            var contentOverflow = child._layoutInfo.contentOverflow;
             var layoutChange = 0;
 
+            var contentOverflow = child._layoutInfo.contentOverflow;
             if(contentOverflow) {
                 if(_useLog) child.log("ContentOverflow=" + def.describe(contentOverflow));
 
                 // Compare child content overflow with common content overflow
-                pvc_Sides.getAnchorSides(anchor).forEach(function(side) {
+                pvc_Sides.getAnchorSides(child.anchor).forEach(function(side) {
                     // Precision is 1/10th of a pixel.
 
                     var value    = _contentOverflow[side] || 0;

@@ -423,8 +423,8 @@ def
             } else {
                 this.log("Size          -> " + def.describe(sizeAvailable));
             }
-            this.log(" Margins      -> " + def.describe(margins));
-            this.log("  Paddings    -> " + def.describe(paddings));
+            if(margins.width  || margins.height)  this.log(" Margins      -> " + def.describe(margins));
+            if(paddings.width || paddings.height) this.log("  Paddings    -> " + def.describe(paddings));
             this.log("   ClientSize -> " + def.describe(clientSizeAvailable));
         }
 
@@ -604,8 +604,8 @@ def
         if(useLog) {
             this.log("   ClientSize <- " + def.describe(li.clientSize));
             if(li.clientSizeIncrease) this.log("             (+) " + def.describe(li.clientSizeIncrease));
-            this.log("  Paddings    <- " + def.describe(li.paddings));
-            this.log(" Margins      <- " + def.describe(li.margins));
+            if(paddings.width || paddings.height) this.log("  Paddings    <- " + def.describe(li.paddings));
+            if(margins.width  || margins.height)  this.log(" Margins      <- " + def.describe(li.margins));
             this.log("Size          <- " + def.describe(li.size));
             if(li.sizeIncrease) this.log("             (+) " + def.describe(li.sizeIncrease));
         }
@@ -780,7 +780,7 @@ def
 
                 while(index < count) {
                     child = sideChildren[index];
-                    if(useLog) child.log.group("Layout SIDE");
+                    if(useLog) child.log.group("Layout SIDE child");
                     try {
                         if(layoutChild.call(this, child, canResize)) return true; // resized => break
                     } finally {
@@ -794,7 +794,7 @@ def
                 count = fillChildren.length;
                 while(index < count) {
                     child = fillChildren[index];
-                    if(useLog) child.log.group("Layout FILL");
+                    if(useLog) child.log.group("Layout FILL child");
                     try {
                         if(layoutChild.call(this, child, canResize)) return true; // resized => break
                     } finally {

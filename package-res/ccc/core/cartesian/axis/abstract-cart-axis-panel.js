@@ -568,7 +568,7 @@ def
 
     _calcContinuousTicks: function() {
         var doLog = (def.debug >= 7);
-        if(doLog) this.log("_calcContinuousTicks");
+        if(doLog) this.log.group("_calcContinuousTicks");
 
         var layoutInfo = this._layoutInfo;
 
@@ -608,9 +608,9 @@ def
         }
 
         if(def.debug >= 5)
-            this.log("_calcContinuousTicks RESULT count=" + ticks.length + " step="  + ticks.step);
+            this.log.info("RESULT count=" + ticks.length + " step="  + ticks.step);
 
-        if(doLog) this.log("_calcContinuousTicks END");
+        if(doLog) this.log.groupEnd();
     },
 
     _calcContinuousTicksValue: function(ticksInfo, tickCountMax) {
