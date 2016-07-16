@@ -1,34 +1,37 @@
 define([
-  "ccc/def",
-  "ccc/pvc",
-  "test/utils",
-  "test/data-1"
+    "ccc/def",
+    "ccc/pvc",
+    "test/utils",
+    "test/data-1"
 ], function(def, pvc, utils, datas) {
 
-  describe("pvc.PlotPanel", function() {
+    //region helpers
+    function createAndLayoutChart(chartType, options1, options2) {
 
-    describe("`plotSizeMin` option", function() {
+        var chartOptions = {
+            width:  200,
+            height: 300,
 
-      function createChart(chartType, options) {
-        var chartOptions = def.setDefaults(options, {
-          width: 200,
-          height: 300,
-          animate: false,
-          interactive: false,
-          // Reset
-          autoPaddingByDotSize: false, // relevant for MetricDotChart
-          axisOffset: 0,
-          margins: 0,
-          paddings: 0,
-          contentPaddings: 0,
-          contentMargins: 0
-        });
+            animate: false,
+            interactive: false,
+
+            // Reset
+            autoPaddingByDotSize: false, // relevant for MetricDotChart
+            axisOffset: 0,
+            margins: 0,
+            paddings: 0,
+            contentPaddings: 0,
+            contentMargins: 0
+        };
+
+        if(options1) def.copyOwn(chartOptions, options1);
+        if(options2) def.copyOwn(chartOptions, options2);
 
         var dataSpec;
-        if(chartType === pvc.MetricDotChart) {
-          dataSpec = datas['relational, category=date|value=qty|value2=sales, 4 categories, constant positive value, increasing value'];
+        if (chartType === pvc.MetricDotChart) {
+            dataSpec = datas['relational, category=date|value=qty|value2=sales, 4 categories, constant positive value, increasing value'];
         } else {
-          dataSpec = datas['relational, category=date|value=qty, 4 categories'];
+            dataSpec = datas['relational, category=date|value=qty, 4 categories'];
         }
 
         var chart = utils.createChart(chartType, chartOptions, dataSpec);
@@ -36,351 +39,392 @@ define([
         // layout has been performed.
 
         return chart;
-      }
+    }
 
-      function getPanelLayoutSize(chartType, options, panel) {
-        var chart = createChart(chartType, options);
-        switch(panel) {
-          case 'main':
-            return chart.plotPanels.main.getLayout().size;
-          case 'base':
-            return chart.basePanel.getLayout().size;
-          case 'content':
-            return chart.contentPanel.getLayout().gridSize;
+    function measureLayout(chart, layoutMeasureId) {
+        switch(layoutMeasureId) {
+            case 'main':
+                return chart.plotPanels.main.getLayout().size;
+
+            case 'base':
+                return chart.basePanel.getLayout().size;
+
+            case 'content-fill':
+                return chart.contentPanel.getLayout().gridSize;
+
+            case 'content-fill-client':
+                var li = chart.contentPanel.getLayout();
+                return {
+                    width:  (li.gridSize.width ||0) - li.gridPaddings.width,
+                    height: (li.gridSize.height||0) - li.gridPaddings.height
+                };
+
+            case 'content-fill-paddings':
+                return chart.contentPanel.getLayout().gridPaddings;
         }
-      }
+    }
 
-      function expectPanelSizeToBeAtLeast(chartType, options, panel, w, h) {
-        var size = getPanelLayoutSize(chartType, options, panel);
+    function expectSizeToBe(size, w, h) {
+        if(w != null) expect(size.width ).toBeCloseTo(w, 2);
+        if(h != null) expect(size.height).toBeCloseTo(h, 2);
+    }
+    //endregion
 
-        if(w) expect(size.width).not.toBeLessThan(w);
-        if(h) expect(size.height).not.toBeLessThan(h);
-      }
+    describe("pvc.PlotPanel", function() {
 
-      function expectPanelSizeToBe(chartType, options, panel, w, h) {
-        var size = getPanelLayoutSize(chartType, options, panel);
+        describe("Option `plotSizeMin`", function() {
 
-        if(w) expect(size.width).toBeCloseTo(w, 2);
-        if(h) expect(size.height).toBeCloseTo(h, 2);
-      }
+            describe("Basic behaviour", function() {
 
-      function expectPanelSizeToBeAtMost(chartType, options, panel, w, h) {
-        var size = getPanelLayoutSize(chartType, options, panel);
+                [
+                    pvc.PieChart, // inherits from BaseChart
+                    pvc.BarChart,  // inherits from Categorical
+                    pvc.MetricDotChart // inherits from Cartesian
+                ].forEach(function(chartType) {
 
-        if(w) expect(size.width).not.toBeGreaterThan(w);
-        if(h) expect(size.height).not.toBeGreaterThan(h);
-      }
+                    describe("In a " + def.qualNameOf(chartType), function() {
 
-      function expectPanelSizeToBeWithin(chartType, options, panel, w, h) {
-        var size = getPanelLayoutSize(chartType, options, panel);
+                        describe("Specifying a `plotSizeMin` larger than the chart's dimensions " +
+                                 "should force the chart to increase its plot area beyond the " +
+                                 "specified `width` and `height`", function() {
 
-        if(w) {
-          expect(size.width).not.toBeLessThan(w[0]);
-          expect(size.width).not.toBeGreaterThan(w[1]);
-        }
+                            it("when `plotSizeMin` is specified as a number", function() {
 
-        if(h) {
-          expect(size.height).not.toBeLessThan(h[0]);
-          expect(size.height).not.toBeGreaterThan(h[1]);
-        }
+                                var chart = createAndLayoutChart(chartType, {
+                                    plotSizeMin: 400
+                                });
 
-      }
+                                expectSizeToBe(measureLayout(chart, 'main'), 400, 400);
+                            });
 
-      describe("basic behaviour", function() {
+                            it("when `plotSizeMin` is specified as an object", function() {
 
-        [
-          pvc.PieChart, // inherits from BaseChart
-          pvc.BarChart,  // inherits from Categorical
-          pvc.MetricDotChart // inherits from Cartesian
-        ].forEach(function(chartType) {
+                                var chart = createAndLayoutChart(chartType, {
+                                    plotSizeMin: {width: 400}
+                                });
 
-          describe("In a " + def.qualNameOf(chartType), function() {
+                                expectSizeToBe(measureLayout(chart, 'main'), 400);
+                            });
 
-            describe("specifying a `plotSizeMin` larger than the chart's dimensions " +
-              "should force the chart to increase its plot area beyond the " +
-              "specified `width` and `height`", function() {
+                            it("when `plotSizeMin` is specified as a string containing a number", function() {
 
-              it("when `plotSizeMin` is specified as a number", function() {
-                expectPanelSizeToBe(chartType, {
-                  plotSizeMin: 400
-                }, 'main', 400, 400);
-              });
+                                var chart = createAndLayoutChart(chartType, {
+                                    plotSizeMin: '400'
+                                });
 
-              it("when `plotSizeMin` is specified as an object", function() {
-                expectPanelSizeToBe(chartType, {
-                  plotSizeMin: {width: 400}
-                }, 'main', 400);
-              });
-
-              it("when `plotSizeMin` is specified as a string containing a number", function() {
-                expectPanelSizeToBe(chartType, {
-                  plotSizeMin: '400'
-                }, 'main', 400, 400);
-              });
+                                expectSizeToBe(measureLayout(chart, 'main'), 400, 400);
+                            });
 
 
-              it("but NEVER when `plotSizeMin` is specified as a percentage string " +
-                "(because percentages are not supported)", function() {
-                // specifying a percentage would make no sense, as the chart would grow on
-                // each iteration of the layout solver
-                expectPanelSizeToBeAtMost(chartType, {
-                  plotSizeMin: '90%'
-                }, 'main', 200, 300);
+                            it("but NEVER when `plotSizeMin` is specified as a percentage string " +
+                               "(because percentages are not supported)", function() {
+                                // specifying a percentage would make no sense, as the chart would grow on
+                                // each iteration of the layout solver
 
-              });
+                                var chart = createAndLayoutChart(chartType, {});
+                                var plotSizeNormal = measureLayout(chart, 'main');
+
+                                chart = createAndLayoutChart(chartType, {
+                                    plotSizeMin: '90%'
+                                });
+
+                                expectSizeToBe(measureLayout(chart, 'main'), plotSizeNormal.width, plotSizeNormal.height);
+                            });
+                        });
+                    });
+                });
+
+                // ---
+
+                [
+                    //pvc.PieChart, // inherits from BaseChart //TODO: modify code to contain BaseCharts in a contentPanel
+                    pvc.BarChart,  // inherits from Categorical
+                    pvc.MetricDotChart // inherits from Cartesian
+                ].forEach(function(chartType) {
+
+                    describe("In a " + def.qualNameOf(chartType), function() {
+
+                        var _defaultOptions = {
+                            plotSizeMin:   400,
+                            axisLabel_visible: false,
+                            baseAxisSize:  50,
+                            orthoAxisSize: 50
+                        };
+
+                        it("the base panel should grow just enough, when there are no content paddings nor content margins", function() {
+
+                            var chart = createAndLayoutChart(chartType, _defaultOptions);
+
+                            expectSizeToBe(measureLayout(chart, 'base'), 450, 450);
+                        });
+
+                        it("the base panel should grow just enough, when there are absolute paddings", function() {
+
+                            var chart = createAndLayoutChart(chartType, _defaultOptions, {
+                                contentPaddings: 100
+                            });
+
+                            // 450 + 2 * 100 == 650
+                            expectSizeToBe(measureLayout(chart, 'base'), 650, 650);
+                        });
+
+                        it("the base panel should grow just enough, when there are relative paddings", function() {
+
+                            var chart = createAndLayoutChart(chartType, _defaultOptions, {
+                                contentPaddings: "30%"
+                            });
+
+                            // 450 / (1 - 2 * 0.30) == 1125
+                            expectSizeToBe(measureLayout(chart, 'base'), 1125, 1125);
+                        });
+
+                        it("the base panel should grow just enough when there are absolute margins", function() {
+
+                            var chart = createAndLayoutChart(chartType, _defaultOptions, {
+                                contentMargins: 100
+                            });
+
+                            // 450 + 2 * 100 == 650
+                            expectSizeToBe(measureLayout(chart, 'base'), 650, 650);
+                        });
+
+                        it("the base panel should grow just enough when there are relative margins", function() {
+
+                            var chart = createAndLayoutChart(chartType, _defaultOptions, {
+                                contentMargins: "30%"
+                            });
+
+                            // 450 / (1 - 2 * 0.30) == 1125
+                            expectSizeToBe(measureLayout(chart, 'base'), 1125, 1125);
+                        });
+
+                        it("the base panel should grow just enough when there are both absolute margins and paddings", function() {
+
+                            var chart = createAndLayoutChart(chartType, _defaultOptions, {
+                                contentMargins: 100,
+                                contentPaddings: 33
+                            });
+
+                            // 450 + 2 * 100 + 2 * 33 == 716
+                            expectSizeToBe(measureLayout(chart, 'base'), 716, 716);
+                        });
+                    });
+                });
             });
 
-          });
+            describe("Interaction with other options of cartesian axes", function() {
 
-        });
+                describe("Axis offset", function() {
+                    var _defaultOptions = {
+                        axisOffset: 0.45,                 // 90% of the plot area is just padding
+                        orthoAxisDomainRoundMode: 'none', // no tick rounding on the vertical direction
+                        orthoAxisOriginIsZero: true       // the default; locks "bottom" from being affected offset.
+                    };
 
-        [
-          //pvc.PieChart, // inherits from BaseChart //TODO: modify code to contain BaseCharts in a contentPanel
-          pvc.BarChart,  // inherits from Categorical
-          pvc.MetricDotChart // inherits from Cartesian
-        ].forEach(function(chartType) {
+                    it("should affect the plot area paddings, when `plotSizeMin` is not specified", function() {
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions);
 
-          describe("In a " + def.qualNameOf(chartType), function() {
-            it("the base panel should be within acceptable bounds when there are no content paddings nor content margins", function() {
-              expectPanelSizeToBe(chartType, {
-                plotSizeMin: 400,
-                axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50
-              }, 'base', 450, 450);
+                        var pa = measureLayout(chart, 'content-fill');
+                        expectSizeToBe(measureLayout(chart, 'content-fill-paddings'), 0.9       * pa.width, 0.45       * pa.height);
+                        expectSizeToBe(measureLayout(chart, 'content-fill-client'),   (1 - 0.9) * pa.width, (1 - 0.45) * pa.height);
+                    });
+
+                    it("should affect the plot area paddings, when `plotSizeMin` is specified", function() {
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                            plotSizeMin: 400
+                        });
+
+                        var pa = measureLayout(chart, 'content-fill');
+                        expectSizeToBe(pa, 400, 400);
+                        expectSizeToBe(measureLayout(chart, 'content-fill-paddings'), 0.9       * pa.width, 0.45       * pa.height);
+                        expectSizeToBe(measureLayout(chart, 'content-fill-client'),   (1 - 0.9) * pa.width, (1 - 0.45) * pa.height);
+                    });
+                });
             });
 
-            it("the base panel should grow when there are absolute paddings", function() {
-              expectPanelSizeToBe(chartType, {
-                plotSizeMin: 400,
-                axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50,
-                //
-                contentPaddings: 100
-              }, 'base', 650, 650);
-              // 450 + 2*100 == 650
+            describe("Interaction with other options of categorical axes", function() {
+
+                describe("Fixed categorical band layout", function() {
+                    // Band imposes main plot client size min of: 4 categories: 4*(70+10) = 320 pixels
+                    // There are no label overflows cause the bars are wider than the labels.
+                    var C = 4;
+                    var TB = (70 + 10) * C; // = 320
+
+                    var _defaultOptions = {
+                        baseAxisBandSize:    70,
+                        baseAxisBandSpacing: 10
+                    };
+
+                    it("should grow the content's fill client size to the space allocated to the bands, when no `plotSizeMin` is specified", function() {
+
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions);
+
+                        expectSizeToBe(measureLayout(chart, 'content-fill-client'), TB);
+                    });
+
+                    it("should ignore `plotSizeMin`, when it is SMALLER than the space allocated to the bands", function() {
+
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                            plotSizeMin: {width: 250}
+                        });
+
+                        expectSizeToBe(measureLayout(chart, 'content-fill'), TB);
+                    });
+
+                    it("should grow the content's fill size to `plotSizeMin` when it is LARGER than the space allocated to the bands", function() {
+
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                            plotSizeMin: {width: 400}
+                        });
+
+                        expectSizeToBe(measureLayout(chart, 'content-fill'), 400);
+                    });
+                });
+
+                describe("Axis offset and Fixed categorical band layout", function() {
+                    // Band imposes main plot client size of: 4 categories: 4*(70+10) = 320 pixels
+                    // There are no label overflows cause the bars are wider than the labels.
+                    // 5% base axis offset causes 5% paddings on each side
+                    var C = 4;
+                    var TB = (70 + 10) * C; // = 320
+                    var plotW = TB / (1 - 2 * 0.05); // ~355.5(5)
+
+                    var _defaultOptions = {
+                        baseAxisBandSize:    70,
+                        baseAxisBandSpacing: 10,
+                        baseAxisOffset:      0.05
+                    };
+
+                    it("should grow the plot area to the axis offset plus the fixed space allocated to the bands, " +
+                       "when `plotSizeMin` is not specified", function() {
+
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions);
+
+                        expectSizeToBe(measureLayout(chart, 'content-fill'), plotW);
+                    });
+
+                    it("should grow the plot area to the axis offset plus the fixed space allocated to the bands, " +
+                       "and not be affected by a `plotSizeMin` that is smaller than the plot size that results when it is not specified", function() {
+
+                        var arbitraryDelta = 10;
+
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                            plotSizeMin: {width: plotW - arbitraryDelta}
+                        });
+
+                        expectSizeToBe(measureLayout(chart, 'content-fill'), plotW);
+                    });
+
+                    it("should grow the plot area to `plotSizeMin`, " +
+                       "when specified and larger than the plot size that results when it is not specified", function() {
+
+                        var arbitraryDelta = 10;
+
+                        var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                            plotSizeMin: {width: plotW + arbitraryDelta}
+                        });
+
+                        expectSizeToBe(measureLayout(chart, 'content-fill'), plotW + arbitraryDelta);
+                    });
+                });
             });
 
-            it("the base panel should grow when there are relative paddings", function() {
-              expectPanelSizeToBe(chartType, {
-                plotSizeMin: 400,
-                axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50,
-                //
-                contentPaddings: "30%"
-              }, 'base', 1125, 1125);
-              // 450/(1 - 2*0.30) == 1125
+            describe("Interaction with other options of continuous axes", function() {
+                /**
+                 * The maximum of the dataset is 19, and there are ticks until 21.
+                 * Hence, the padding introduced by tick rounding is (21-19) / 21 of the client height.
+                 *
+                 * By adding this space to the effective padding of the main panel,
+                 * we should obtain the original orthoAxisOffset.
+                 */
+
+                var _defaultOptions = {
+                    //axisLabel_visible: false,
+                    baseAxisSize:      50,
+                    orthoAxisSize:     50,
+                    orthoAxisTickUnit:  3,       // ticks: [0, 3, 6, 9, 12, 15, 18, 21]
+                    orthoAxisOriginIsZero: true, // "bottom" is locked and axis offset is not applied to this side.
+                    orthoAxisDomainRoundMode: 'tick', // round domain to next tick (from 19 to 21)
+                    contentPaddings:   10 // absorb any axes' labels' overflows
+                };
+
+                function measureOrthoAxisOffset(chart) {
+                    var m = chart.plotPanels.main.getLayout();
+                    var tickRoundPct  = 2 / 21;
+                    var tickRoundPx   = tickRoundPct * m.clientSize.height;
+
+                    var topAxisOffset = (m.paddings.top || 0) + tickRoundPx;
+                    return topAxisOffset / m.size.height;
+                }
+
+                it("should add plot paddings equal to the difference between the axis offset and the tick rounding", function() {
+                    // Tick Rounding is: 2 / 21 = 0.09523809523809523 ~= 0.1
+                    // So, 0.1 and 0.4 are both greater and paddings should be added to reach the desired offset.
+
+                    var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                        height: 470, // 470 = 400 + 50 + 2 * 10
+                        orthoAxisOffset: 0.4
+                    });
+
+                    expect(measureOrthoAxisOffset(chart)).toBeCloseTo(0.4, 2);
+
+                    // ---
+
+                    chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                        height: 470, // 470 = 400 + 50 + 2 * 10
+                        orthoAxisOffset: 0.1
+                    });
+
+                    expect(measureOrthoAxisOffset(chart)).toBeCloseTo(0.1, 2);
+                });
+
+                it("should NOT add paddings when the tick rounding is LARGER than the axis offset", function() {
+                    // Tick Rounding is: 2 / 21 = 0.09523809523809523 ~= 0.1
+                    // 0.01 is much smaller, so no paddings should be added.
+
+                    var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                        height: 470, // 470 = 400 + 50 + 2 * 10
+                        orthoAxisOffset: 0.01
+                    });
+
+                    expect(measureOrthoAxisOffset(chart)).toBeGreaterThan(0.01);
+
+                    expect(measureLayout(chart, 'content-fill-paddings').height).toBe(0);
+                });
+
+                it("should result in the same plot paddings, when the plot size is instead imposed by an equal `plotSizeMin`", function() {
+
+                    var chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                        plotSizeMin:     400, // 400 + 50 + 2 * 10 = 470
+                        orthoAxisOffset: 0.4
+                    });
+
+                    expect(measureOrthoAxisOffset(chart)).toBeCloseTo(0.4, 2);
+
+                    // ---
+
+                    chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                        plotSizeMin:     400, // 400 + 50 + 2 * 10 = 470
+                        orthoAxisOffset: 0.1
+                    });
+
+                    expect(measureOrthoAxisOffset(chart)).toBeCloseTo(0.1, 2);
+
+                    // ---
+
+                    chart = createAndLayoutChart(pvc.BarChart, _defaultOptions, {
+                        plotSizeMin:     400, // 400 + 50 + 2 * 10 = 470
+                        orthoAxisOffset: 0.01
+                    });
+
+                    expect(measureOrthoAxisOffset(chart)).toBeGreaterThan(0.01);
+                    expect(measureLayout(chart, 'content-fill-paddings').height).toBe(0);
+                });
             });
 
-            it("the base panel should grow when there are absolute margins", function() {
-              expectPanelSizeToBe(chartType, {
-                plotSizeMin: 400,
-                axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50,
-                //
-                contentMargins: 100
-              }, 'base', 650, 650);
-              // 450 + 2*100 == 650
+            describe("Interaction with plots' own content overflow", function() {
+
             });
-
-            it("the base panel should grow when there are relative margins", function() {
-              expectPanelSizeToBe(chartType, {
-                plotSizeMin: 400,
-                axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50,
-                //
-                contentMargins: "30%"
-              }, 'base', 1125, 1125);
-              // 450/(1 - 2*0.30) == 1125
-            });
-
-            it("the base panel should grow when there are both absolute margins and paddings", function() {
-              expectPanelSizeToBe(chartType, {
-                plotSizeMin: 400,
-                axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50,
-                //
-                contentMargins: 100,
-                contentPaddings: 33
-              }, 'base', 716, 716);
-              // 450 + 2*100 + 2*33 == 716
-            });
-
-          });
-
         });
-
-      });
-
-      describe("interaction with other options in a categorical axis", function() {
-
-        describe("Bands with a fixed size", function() {
-          it("should force the chart to INCREASE its content area " +
-            " when specifying a `plotSizeMin` LARGER than the space allocated to the bands", function() {
-            //Confirm the space assigned to the main plot is both larger than plotSizeMin and the bands
-            // 4 categories: 4*(70+10) = 320 pixels
-            expectPanelSizeToBe(pvc.BarChart, {
-              baseAxisBandSize: 70,
-              baseAxisBandSpacing: 10
-            }, 'content', 320);
-          });
-
-          it("should not influence the content area " +
-            " when specifying a `plotSizeMin` SMALLER than the space allocated to the bands", function() {
-            // Confirm a small plotSizeMin has not effect on the the space assigned to the content
-            // width is enforced by band size
-            // height is enforce by option "height"
-            expectPanelSizeToBe(pvc.BarChart, {
-              plotSizeMin: 250,
-              baseAxisBandSize: 70,
-              baseAxisBandSpacing: 10
-            }, 'content', 320);
-          });
-
-          it("should force the chart to INCREASE its content area " +
-            " when specifying a `plotSizeMin` LARGER than the space allocated to the bands", function() {
-            //Confirm the space assigned to the content is plotSizeMin
-            expectPanelSizeToBe(pvc.BarChart, {
-              plotSizeMin: 400,
-              baseAxisBandSize: 70,
-              baseAxisBandSpacing: 10
-            }, 'content', 400, 400);
-
-          });
-        });
-
-        describe("Axis offset", function() {
-          it("should be contained within the original `width`, `height` when `plotSizeMin` is specified", function() {
-            expectPanelSizeToBeAtMost(pvc.BarChart, {
-              axisOffset: 0.45 //90% of the plot area is just padding
-            }, 'content', 200, 300);
-          });
-
-          it("should force the content size when `plotSizeMin` is specified", function() {
-            expectPanelSizeToBe(pvc.BarChart, {
-              axisOffset: 0.45, //90% of the plot area is just padding
-              plotSizeMin: 400
-            }, 'content', 400, 400);
-          });
-        });
-
-        describe("Both a fixed band size and a axis offset", function() {
-
-          it("control case: when `plotSizeMin` is not specified", function() {
-            // width is enforced by the (relative) axis offset times the band size
-            //band size = 4*(70 + 10) = 320 px
-            expectPanelSizeToBe(pvc.BarChart, {
-              baseAxisBandSize: 70,
-              baseAxisBandSpacing: 10,
-              baseAxisOffset: 0.05 // 10% of the plot area is just padding
-            }, 'content', 355.56, null); // 355.5(5) = 320/(1 - 2*0.05)
-          });
-
-          it("should not influence the content area when `plotSizeMin` is smaller than the control case", function() {
-            // width is enforced by band size
-            // height is enforce by option "height"
-            expectPanelSizeToBe(pvc.BarChart, {
-              baseAxisBandSize: 70,
-              baseAxisBandSpacing: 10,
-              baseAxisOffset: 0.05, //10% of the plot area is just padding
-              //
-              plotSizeMin: 250
-            }, 'content', 355.56, null);
-          });
-
-          it("should force the content area to grow when `plotSizeMin` is larger than the control case", function() {
-            // width and height are enforced by plotSizeMin
-            expectPanelSizeToBe(pvc.BarChart, {
-              baseAxisBandSize: 70,
-              baseAxisBandSpacing: 10,
-              baseAxisOffset: 0.05, //10% of the plot area is just padding
-              //
-              plotSizeMin: 400
-            }, 'content', 400, 400);
-          });
-
-        });
-
-      });
-
-      fdescribe("interaction with other options in a continuous axis", function() {
-
-        describe("The space used by vertical tick rounding should be deduced from orthoAxisOffset", function() {
-
-          function expectSameOrthoAxisOffset(options, orthoAxisOffset) {
-
-            /**
-             * The maximum of the dataset is 19, and there are ticks until 21.
-             * Hence, the padding introduced by tick rounding is (21-19)/21
-             *
-             * By adding this space to the effective padding of the main panel,
-             * we should recover the original orthoAxisOffset
-             */
-
-            var chart = createChart(pvc.BarChart, def.copyOwn({
-                //axisLabel_visible: false,
-                baseAxisSize: 50,
-                orthoAxisSize: 50,
-                orthoAxisOffset: orthoAxisOffset,
-                orthoAxisTickUnit: 3,
-                orthoAxisOriginIsZero: true,
-                orthoAxisDomainRoundMode: 'tick',
-                contentPaddings: 10
-              }, options)
-            );
-
-            var m = chart.plotPanels.main.getLayout();
-
-            var realOrthoAxisOffset = ( m.paddings.top + m.clientSize.height * 2 / 21 ) / m.size.height;
-            expect(realOrthoAxisOffset).toBeCloseTo(orthoAxisOffset, 2);
-          }
-
-          it("control case, when the dimensions are fixed ", function() {
-            expectSameOrthoAxisOffset({
-              height: 470 // 470 = 400 + 50 + 2*10
-            }, 0.4);
-
-            // should be independent of the actual choice of orthoAxisOffset
-            expectSameOrthoAxisOffset({
-              height: 470 // 470 = 400 + 50 + 2*10
-            }, 0.1);
-          });
-
-          it("humm, it doesn't work for small axis offsets ", function() {
-            expectSameOrthoAxisOffset({
-              height: 470 // 470 = 400 + 50 + 2*10
-            }, 0.01);
-          });
-
-          it("same final result, but obtained by forcing a size with `plotSizeMin`", function() {
-
-            expectSameOrthoAxisOffset({
-              plotSizeMin: 400 // 400 + 50 + 2*10 = 470
-            }, 0.4);
-
-            expectSameOrthoAxisOffset({
-              plotSizeMin: 400 // 400 + 50 + 2*10 = 470
-            }, 0.1);
-
-          });
-
-        });
-
-      });
-
-      describe("interaction with other options in a continuous axis, specific to a pvc.MetricDotChart", function() {
-        it("when", function() {
-
-        });
-      });
-
     });
-
-  });
-})
-;
+});

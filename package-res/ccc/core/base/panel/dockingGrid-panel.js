@@ -125,8 +125,8 @@ def
             if(_useLog) _me.log.groupEnd();
         }
 
-        _layoutInfo.gridMargins  = new pvc_Sides(_margins);
-        _layoutInfo.gridPaddings = new pvc_Sides(_contentOverflow);
+        _layoutInfo.gridMargins  = pvc_Sides.updateSize(_margins);
+        _layoutInfo.gridPaddings = pvc_Sides.updateSize(_contentOverflow);
         _layoutInfo.gridSize     = new pvc_Size(_fillSize);
 
         return _layoutInfo.clientSize; // may have increased.
