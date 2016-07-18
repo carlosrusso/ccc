@@ -46,6 +46,9 @@ define([
             case 'main':
                 return chart.plotPanels.main.getLayout().size;
 
+            case 'main-paddings':
+                return chart.plotPanels.main.getLayout().paddings;
+
             case 'base':
                 return chart.basePanel.getLayout().size;
 
@@ -422,7 +425,46 @@ define([
                 });
             });
 
-            describe("Interaction with plots' own content overflow", function() {
+            fdescribe("Interaction with plots' own content overflow", function() {
+
+              var _defaultOptions = {
+                sizeRole: "x",
+                sizeAxisRatio: 0.1,
+                sizeAxisRatioTo: "height"
+              };
+
+              it("baseline", function() {
+                var chart = createAndLayoutChart(pvc.MetricDotChart, _defaultOptions, {
+                  autoPaddingByDotSize: false
+                });
+
+                expectSizeToBe(measureLayout(chart, 'main-paddings'), 0, 0);
+
+              });
+
+              it("enabling autoPaddingByDotSize", function() {
+                var chart = createAndLayoutChart(pvc.MetricDotChart, _defaultOptions, {
+                  autoPaddingByDotSize: true
+                });
+
+                var paddings = chart.plotPanels.main.getLayout().paddings;
+                var clientSize = chart.plotPanels.main.getLayout().clientSize;
+
+                expectSizeToBe(measureLayout(chart, 'main-paddings'), 0, 300);
+
+
+
+              });
+
+              it("enabling autoPaddingByDotSize and plotSizeMin", function() {
+                var chart = createAndLayoutChart(pvc.MetricDotChart, _defaultOptions, {
+                  autoPaddingByDotSize: true,
+                  plotSizeMin: {height: 600}
+                });
+
+                expectSizeToBe(measureLayout(chart, 'main-paddings'), 0, 300);
+
+              });
 
             });
         });
